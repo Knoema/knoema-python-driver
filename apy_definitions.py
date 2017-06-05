@@ -1,0 +1,233 @@
+"""This modlule contains metadata definitions for Knoema API"""
+
+import json
+from datetime import datetime
+
+def isequal_strings_ignorecase(first, second):
+    """The function compares strings ignoring case"""
+    try:
+        return first.upper() == second.upper()
+    except AttributeError:
+        if not first:
+            if not second:
+                return True
+
+
+class DimensionMember(object):
+    """The class contains dimension member information"""
+
+    def __init__(self, data):
+        self.key = data['key']
+        self.name = data['name']
+        self.level = data['level']
+        self.hasdata = data['hasData']
+        self.fields = data['fields']
+
+
+class DimensionModel(object):
+    """The class contains dimension descitption"""
+
+    def __init__(self, data):
+        self.key = data['key']
+        self.id = data['id']
+        self.name = data['name']
+
+
+class Dimension(DimensionModel):
+    """The class contains dimension descitption and dimnesion items"""
+
+    def __init__(self, data):
+        super().__init__(data)
+
+        self.items = []
+        for item in data['items']:
+            self.items.append(DimensionMember(item))
+
+    def findmember_by_id(self, member_id):
+        """The method search member of dimension by given member id"""
+        for item in self.items:
+            if 'id' in item.fields and isequal_strings_ignorecase(item.fields['id'], member_id):
+                return item
+        return None
+
+    def findmember_by_name(self, member_name):
+        """The method search member of dimension by given member name"""
+        for item in self.items:
+            if isequal_strings_ignorecase(item.name, member_name):
+                return item
+        return None
+
+
+class DateRange(object):
+    """The class contains information about dataset's data range"""
+
+    def __init__(self, data):
+        self.start_date = datetime.strptime(data['startDate'], '%Y-%m-%dT%H:%M:%SZ')
+        self.end_date = datetime.strptime(data['endDate'], '%Y-%m-%dT%H:%M:%SZ')
+        self.frequencies = data['frequencies']
+
+
+class Dataset(object):
+    """The class contains dataset description"""
+
+    def __init__(self, data):
+        """The method loading data from json to class fields"""
+        self.id = data['id']
+
+        self.dimensions = []
+        for dim in data['dimensions']:
+            self.dimensions.append(DimensionModel(dim))
+
+    def find_dimension_by_name(self, name):
+        """the method searching dimension with a given name"""
+
+        for dim in self.dimensions:
+            if isequal_strings_ignorecase(dim.name, name):
+                return dim
+        return None
+
+
+class PivotItem(object):
+    """The class contains pivot request item"""
+
+    def __init__(self, dimensionid=None, members=None):
+        self.dimensionid = dimensionid
+        self.members = members
+
+
+class PivotTimeItem(PivotItem):
+    """The class contains pivot request item"""
+
+    def __init__(self, dimensionid=None, members=None, uimode=None):
+        super().__init__(dimensionid, members)
+        self.uimode = uimode
+
+
+class PivotRequest(object):
+    """The class contains pivot request"""
+
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.header = []
+        self.stub = []
+        self.filter = []
+        self.frequencies = []
+
+    def _getitemarr(self, items):
+        arr = []
+        for item in items:
+            itemvalues = {
+                'DimensionId': item.dimensionid,
+                'Members': item.members
+            }
+            if isinstance(item, PivotTimeItem):
+                itemvalues['UiMode'] = item.uimode
+            arr.append(itemvalues)
+        return arr
+
+    def savetojson(self):
+        """The method saves data to json from object"""
+        requestvalues = {
+            'Dataset': self.dataset,
+            'Header' : self._getitemarr(self.header),
+            'Filter' : self._getitemarr(self.filter),
+            'Stub' : self._getitemarr(self.stub),
+            'Frequencies': self.frequencies
+        }
+        return json.dumps(requestvalues)
+
+
+class PivotResponse(object):
+    """The class contains pivot response"""
+
+    def __init__(self, data):
+
+        self.dataset = data['dataset']
+
+        self.header = []
+        for item in data['header']:
+            self.header.append(PivotItem(item['dimensionId'], item['members']))
+
+        self.stub = []
+        for item in data['stub']:
+            self.stub.append(PivotItem(item['dimensionId'], item['members']))
+
+        self.filter = []
+        for item in data['filter']:
+            self.filter.append(PivotItem(item['dimensionId'], item['members']))
+
+        self.tuples = data['data']
+
+
+class FileProperties(object):
+    """The class contains response from upload post request"""
+
+    def __init__(self, data):
+        self.size = data['Size'] if 'Size' in data else None
+        self.name = data['Name'] if 'Name' in data else None
+        self.location = data['Location'] if 'Location' in data else None
+        self.type = data['Type'] if 'Type' in data else None
+
+
+class UploadPostResponse(object):
+    """The class contains response from upload post request"""
+
+    def __init__(self, data):
+        self.successful = data['Successful'] if 'Successful' in data else False
+        self.error = data['Error'] if 'Error' in data else None
+        self.properties = FileProperties(data['Properties'])
+
+
+class UploadVerifyResponse(object):
+    """The class contains response from upload post request"""
+
+    def __init__(self, data):
+        self.successful = data['Successful'] if 'Successful' in data else False
+        self.upload_format_type = data['UploadFormatType'] if 'UploadFormatType' in data else None
+        self.errors = data['ErrorList'] if 'ErrorList' in data else None
+        self.columns = data['Columns'] if 'Columns' in data else None
+        self.flat_ds_update_options = data['FlatDSUpdateOptions'] if 'FlatDSUpdateOptions' in data else None
+
+
+class DatasetUpload(object):
+    """The class contains request for UploadSubmit"""
+
+    def __init__(self):
+        self.upload_format_type = None
+        self.columns = None
+        self.flat_ds_update_options = None
+        self.file_property = None
+        self.name = None
+        self.dataset = None
+
+    def savetojson(self):
+        """The method saves DatasetUpload to json from object"""
+        requestvalues = {
+            'DatasetId': self.dataset,
+            'Name': self.name,
+            'UploadFormatType': self.upload_format_type,
+            'Columns': self.columns,
+            'FileProperty': self.file_property.__dict__,
+            'FlatDSUpdateOptions': self.flat_ds_update_options
+        }
+        return json.dumps(requestvalues)
+
+
+class DatasetUploadResponse(object):
+    """The class contains response for UploadSubmit"""
+
+    def __init__(self, data):
+        self.submit_id = data['Id'] if 'Id' in data else None
+        self.dataset = data['DatasetId'] if 'DatasetId' in data else None
+        self.status = data['Status'] if 'Status' in data else 'failed'
+        self.errors = data['Errors'] if 'Errors' in data else None
+
+
+class DatasetUploadStatusResponse(object):
+    """The class contains response for UploadSubmit"""
+
+    def __init__(self, data):
+        self.submit_id = data['id'] if 'id' in data else None
+        self.dataset = data['datasetId'] if 'datasetId' in data else None
+        self.status = data['status'] if 'status' in data else 'failed'
+        self.errors = data['errors'] if 'errors' in data else None

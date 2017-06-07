@@ -1,4 +1,4 @@
-"""This modlule contains metadata definitions for Knoema API"""
+"""This module contains metadata definitions for Knoema API"""
 
 import json
 from datetime import datetime
@@ -25,7 +25,7 @@ class DimensionMember(object):
 
 
 class DimensionModel(object):
-    """The class contains dimension descitption"""
+    """The class contains dimension description"""
 
     def __init__(self, data):
         self.key = data['key']
@@ -34,7 +34,7 @@ class DimensionModel(object):
 
 
 class Dimension(DimensionModel):
-    """The class contains dimension descitption and dimnesion items"""
+    """The class contains dimension description and dimnesion items"""
 
     def __init__(self, data):
         super().__init__(data)

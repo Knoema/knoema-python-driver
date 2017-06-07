@@ -1,4 +1,4 @@
-"""This is client that wrap requests and response to Knoema API"""
+"""This module contains client that wrap requests and response to Knoema API"""
 
 import json
 import urllib.request
@@ -16,11 +16,11 @@ import apy_definitions as definition
 def _random_string(length):
     return ''.join(random.choice(string.ascii_letters) for ii in range(length + 1))
 
-def _stb(string_data):
+def _string_to_binary(string_data):
     return string_data.encode()
 
 def _crlf():
-    return _stb('\r\n')
+    return _string_to_binary('\r\n')
 
 
 class Client:
@@ -31,10 +31,10 @@ class Client:
         self._appid = appid
         self._appsecret = appsecret
 
-    def _geturl(self, apipath):
+    def _get_url(self, apipath):
         return 'http://{}{}'.format(self._host, apipath)
 
-    def _getheaders(self):
+    def _get_request_headers(self):
 
         if not self._appid or not self._appsecret:
             return {'Content-Type' : 'application/json'}
@@ -49,26 +49,26 @@ class Client:
             'Authorization' : auth
             }
 
-    def _apiget(self, obj, apipath, query=None):
+    def _api_get(self, obj, apipath, query=None):
 
-        url = self._geturl(apipath)
+        url = self._get_url(apipath)
         if query:
             url = '{}?{}'.format(url, query)
 
-        headers = self._getheaders()
+        headers = self._get_request_headers()
         req = urllib.request.Request(url, headers=headers)
         resp = urllib.request.urlopen(req)
 
         return obj(json.load(resp))
 
-    def _apipost(self, responseobj, apipath, requestobj):
+    def _api_post(self, responseobj, apipath, requestobj):
 
-        url = self._geturl(apipath)
+        url = self._get_url(apipath)
 
         jsondata = requestobj.savetojson()
         binary_data = jsondata.encode()
 
-        headers = self._getheaders()
+        headers = self._get_request_headers()
         req = urllib.request.Request(url, binary_data, headers)
         resp = urllib.request.urlopen(req)
 
@@ -78,35 +78,35 @@ class Client:
         """The method is getting information about dataset byt it's id"""
 
         path = '/api/1.0/meta/dataset/{}'
-        return self._apiget(definition.Dataset, path.format(datasetid))
+        return self._api_get(definition.Dataset, path.format(datasetid))
 
     def get_dimension(self, dataset, dimension):
         """The method is getting information about dimension with items"""
 
         path = '/api/1.0/meta/dataset/{}/dimension/{}'
-        return self._apiget(definition.Dimension, path.format(dataset, dimension))
+        return self._api_get(definition.Dimension, path.format(dataset, dimension))
 
     def get_daterange(self, dataset):
         """The method is getting information about date range of dataset"""
 
         path = '/api/1.0/meta/dataset/{}/daterange'
-        return self._apiget(definition.DateRange, path.format(dataset))
+        return self._api_get(definition.DateRange, path.format(dataset))
 
     def get_data(self, pivotrequest):
         """The method is getting data by pivot request"""
 
         path = '/api/1.0/data/pivot/'
-        return self._apipost(definition.PivotResponse, path, pivotrequest)
+        return self._api_post(definition.PivotResponse, path, pivotrequest)
 
     def upload_file(self, file):
         """The method is posting file to the remote server"""
 
-        url = self._geturl('/api/1.0/upload/post')
+        url = self._get_url('/api/1.0/upload/post')
 
         fcontent = FileContent(file)
         binary_data = fcontent.get_binary()
 
-        headers = self._getheaders()
+        headers = self._get_request_headers()
         req = urllib.request.Request(url, binary_data, headers)
         req.add_header('Content-type', fcontent.get_content_type())
         req.add_header('Content-length', len(binary_data))
@@ -122,20 +122,20 @@ class Client:
         if dataset:
             query = 'filePath={}&datasetId={}'.format(file_location, dataset)
 
-        return self._apiget(definition.UploadVerifyResponse, path, query)
+        return self._api_get(definition.UploadVerifyResponse, path, query)
 
     def upload_submit(self, upload_request):
         """The method is submitting dataset upload"""
 
         path = '/api/1.0/upload/save'
-        return self._apipost(definition.DatasetUploadResponse, path, upload_request)
+        return self._api_post(definition.DatasetUploadResponse, path, upload_request)
 
     def upload_status(self, upload_id):
         """The method is checking status of uploaded dataset"""
 
         path = '/api/1.0/upload/status'
         query = 'id={}'.format(upload_id)
-        return self._apiget(definition.DatasetUploadStatusResponse, path, query)
+        return self._api_get(definition.DatasetUploadStatusResponse, path, query)
 
 
 class FileContent(object):
@@ -156,14 +156,14 @@ class FileContent(object):
         content_disp = 'Content-Disposition: form-data; name="file"; filename="{}"'
 
         stream = io.BytesIO()
-        stream.write(_stb('--{}'.format(self.boundary)))
+        stream.write(_string_to_binary('--{}'.format(self.boundary)))
         stream.write(_crlf())
-        stream.write(_stb(content_disp.format(self.file_name)))
+        stream.write(_string_to_binary(content_disp.format(self.file_name)))
         stream.write(_crlf())
         stream.write(_crlf())
         stream.write(self.body)
         stream.write(_crlf())
-        stream.write(_stb('--{}--'.format(self.boundary)))
+        stream.write(_string_to_binary('--{}--'.format(self.boundary)))
         stream.write(_crlf())
 
         return stream.getvalue()

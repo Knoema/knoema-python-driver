@@ -1,11 +1,11 @@
-"""This is test module for knoemaclient"""
+"""This is test module for knoema client"""
 
 import unittest
 import datetime
 import knoema
 
 class TestKnoemaClient(unittest.TestCase):
-    """The is class with knoema cleint unit tests"""
+    """This is class with knoema client unit tests"""
 
     def test_getdata_singleseries_bydimid(self):
         """The method is testing getting single series by dimensions ids"""

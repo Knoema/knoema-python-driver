@@ -1,4 +1,4 @@
-"""This modlule contains data definitions for Knoema client"""
+"""This module contains data definitions for Knoema client"""
 
 from datetime import datetime
 import pandas
@@ -75,7 +75,7 @@ class DataReader(object):
             val = series_point['Value']
             if not val:
                 continue
-                
+
             series_name = self._get_series_name(series_point)
             if series_name not in series:
                 series[series_name] = KnoemaTimeSeries(series_name)

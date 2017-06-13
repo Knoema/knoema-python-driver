@@ -72,6 +72,10 @@ class Dataset(object):
 
     def __init__(self, data):
         """The method loading data from json to class fields"""
+
+        if 'id' not in data:
+            raise ValueError(data)
+
         self.id = data['id']
 
         self.dimensions = []

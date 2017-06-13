@@ -135,7 +135,7 @@ class TestKnoemaClient(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             knoema.get(None)
 
-        self.assertTrue('Dataset id is not specified' in str(context.exception))
+        self.assertTrue('Dataset id is not specified' in str(context.exception))       
 
     def test_no_selection(self):
         """The method is testing if there is no dimensions specified"""
@@ -179,3 +179,78 @@ class TestKnoemaClient(unittest.TestCase):
         sname = 'Albania - FGP - D'
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 8.0)
+
+    def test_get_data_from_dataset_with_multiword_dimnames(self):
+        """The method is testing load data from regular dataset with dimenions that have multi word names"""
+
+        data_frame = knoema.get('FDI_FLOW_CTRY', **{'Reporting country': 'AUS',
+                                                    'Partner country/territory': 'w0',
+                                                    'Measurement principle': 'DI',
+                                                    'Type of FDI': 'T_FA_F',
+                                                    'Type of entity': 'ALL',
+                                                    'Accounting entry': 'NET',
+                                                    'Level of counterpart': 'IMC',
+                                                    'Currency': 'USD'})
+
+        self.assertEqual(data_frame.shape[0], 7)
+        self.assertEqual(data_frame.shape[1], 1)
+
+        sname = 'Australia - WORLD - Directional principle: Inward - FDI financial flows - Total - All resident units - Net - Immediate counterpart (Immediate investor or immediate host) - US Dollar - A'
+
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 31666.666666666901)
+
+        indx = data_frame.last_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 22267.638440)
+
+    def test_get_data_from_flat_dataset_with_multi_measures(self):
+        """The method is testing load data from flat dataset with with mulitple measures"""
+
+        data_frame = knoema.get('bmlaaaf', **{'Country': 'Albania',
+                                              'Borrower': 'Ministry of Finance',
+                                              'Guarantor': 'Albania',
+                                              'Loan type': 'B loan',
+                                              'Loan status': 'EFFECTIVE',
+                                              'Currency of commitment': 'eur',
+                                              'measure': 'Interest rate'})
+
+        self.assertEqual(data_frame.shape[0], 1)
+        self.assertEqual(data_frame.shape[1], 1)
+
+        sname = 'Albania - Ministry of Finance - Albania - B LOAN - EFFECTIVE - EUR - Interest Rate - D'
+        value = data_frame.get_value('All time', sname)
+        self.assertEqual(value, 0.0)
+
+    def test_get_data_from_flat_dataset_without_time(self):
+        """The method is testing load data from flat dataset without time"""
+
+        data_frame = knoema.get('pocqwkd', **{'Object type': 'Airports',
+                                              'Object name': 'Bakel airport'})
+
+        self.assertEqual(data_frame.shape[0], 1)
+        self.assertEqual(data_frame.shape[1], 1)
+
+        value = data_frame.get_value('All time', 'Airports - Bakel Airport - D')
+        self.assertEqual(value, 1.0)
+
+    def test_incorrect_dataset_id(self):
+        """The method is testing if dataset id set up incorrectly"""
+
+        with self.assertRaises(ValueError) as context:
+            knoema.get('incorrect id', somedim='val1;val2')
+
+        self.assertTrue("Requested dataset doesn't exist or you don't have access to it." in str(context.exception))
+
+    def test_not_all_dims_in_filter(self):
+        """The method is testing if dataset id set up incorrectly"""
+
+        with self.assertRaises(ValueError) as context:
+            knoema.get('bmlaaaf', **{'Country': 'Albania',
+                                     'Borrower': 'Ministry of Finance',
+                                     'Guarantor': 'Albania',
+                                     'Loan type': 'B loan',
+                                     'Loan status': 'EFFECTIVE'})
+
+        self.assertTrue("The following dimension(s) are not set: Currency of Commitment, Measure" in str(context.exception))

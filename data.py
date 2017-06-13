@@ -12,6 +12,16 @@ class DataReader(object):
         self.dataset = dataset
         self.dim_values = dim_values
 
+    def _ensure_alldimenions_in_filter(self, filter_dims):
+
+        out_of_filter_dim_names = []
+        for dim in self.dataset.dimensions:
+            if dim not in filter_dims:
+                out_of_filter_dim_names.append(dim.name)
+
+        if out_of_filter_dim_names:
+            raise ValueError('The following dimension(s) are not set: {}'.format(', '.join(out_of_filter_dim_names)))
+
     def _get_dim_members(self, dim, splited_values):
 
         members = []
@@ -32,6 +42,7 @@ class DataReader(object):
 
         pivotreq = definition.PivotRequest(self.dataset.id)
 
+        filter_dims = []
         time_range = None
         for name, value in self.dim_values.items():
             if definition.isequal_strings_ignorecase(name, 'timerange'):
@@ -48,12 +59,16 @@ class DataReader(object):
                 raise ValueError('Dimension with name {} is not found'.
                                  format(name))
 
+            filter_dims.append(dim)
+
             dim = self.client.get_dimension(self.dataset.id, dim.id)
             members = self._get_dim_members(dim, splited_values)
             if not members:
                 raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
             pivotreq.stub.append(definition.PivotItem(dim.id, members))
+
+        self._ensure_alldimenions_in_filter(filter_dims)
 
         if time_range:
             pivotreq.header.append(definition.PivotTimeItem('Time', [time_range], 'range'))
@@ -73,7 +88,7 @@ class DataReader(object):
         series = {}
         for series_point in resp.tuples:
             val = series_point['Value']
-            if not val:
+            if val is None:
                 continue
 
             series_name = self._get_series_name(series_point)

@@ -10,8 +10,7 @@ import random
 import string
 import io
 import os
-import apy_definitions as definition
-
+import knoema.api_definitions as definition
 
 def _random_string(length):
     return ''.join(random.choice(string.ascii_letters) for ii in range(length + 1))

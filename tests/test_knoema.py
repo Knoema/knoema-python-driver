@@ -199,11 +199,11 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         value = data_frame.get_value(indx, sname)
-        self.assertEqual(value, 31666.666666666901)
+        self.assertAlmostEqual(value, 31666.667, 3)
 
         indx = data_frame.last_valid_index()
         value = data_frame.get_value(indx, sname)
-        self.assertEqual(value, 22267.638440)
+        self.assertAlmostEqual(value, 22267.638, 3)
 
     def test_get_data_from_flat_dataset_with_multi_measures(self):
         """The method is testing load data from flat dataset with with mulitple measures"""

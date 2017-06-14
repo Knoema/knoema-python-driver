@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import pandas
-import apy_definitions as definition
+import knoema.api_definitions as definition
 
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""

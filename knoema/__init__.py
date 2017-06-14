@@ -1,9 +1,9 @@
 """This is main package module"""
 
 import time
-import api
-import apy_definitions as definition
-import data
+import knoema.api as api
+import knoema.api_definitions as definition
+import knoema.data as data
 
 def get(dataset, **dim_values):
     """Use this function to get data from Knoema dataset."""

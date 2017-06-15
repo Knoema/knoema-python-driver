@@ -2,6 +2,7 @@
 
 import json
 import urllib.request
+import time
 import datetime
 import hmac
 import base64
@@ -22,7 +23,7 @@ def _crlf():
     return _string_to_binary('\r\n')
 
 
-class Client:
+class ApiClient:
     """This is client that wrap requests and response to Knoema API"""
 
     def __init__(self, host, appid=None, appsecret=None):
@@ -136,6 +137,52 @@ class Client:
         query = 'id={}'.format(upload_id)
         return self._api_get(definition.DatasetUploadStatusResponse, path, query)
 
+    def upload(self, file_path, dataset=None):
+        """Use this function to upload data to Knoema dataset."""
+
+        upload_status = self.upload_file(file_path)
+        err_msg = 'Dataset has not been uploaded to the remote host'
+        if not upload_status.successful:
+            msg = '{}, because of the the following error: {}'.format(err_msg, upload_status.error)
+            raise Exception(msg)
+
+        err_msg = 'Dataset has been verified with errors'
+        upload_ver_status = self.upload_verify(upload_status.properties.location, dataset)
+        if not upload_ver_status.successful:
+            ver_err = '\r\n'.join(upload_ver_status.errors)
+            msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
+            raise Exception(msg)
+
+        ds_upload = definition.DatasetUpload()
+        ds_upload.upload_format_type = upload_ver_status.upload_format_type
+        ds_upload.columns = upload_ver_status.columns
+        ds_upload.file_property = upload_status.properties
+        ds_upload.flat_ds_update_options = upload_ver_status.flat_ds_update_options
+        ds_upload.dataset = dataset
+        if not dataset:
+            ds_upload.name = 'New dataset'
+
+        ds_upload_submit_result = self.upload_submit(ds_upload)
+        err_msg = 'Dataset has been saved to the database'
+        if ds_upload_submit_result.status == 'failed':
+            ver_err = '\r\n'.join(ds_upload_submit_result.errors)
+            msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
+            raise Exception(msg)
+
+        ds_upload_result = None
+        while True:
+            ds_upload_result = self.upload_status(ds_upload_submit_result.submit_id)
+            if ds_upload_result.status == 'pending' or ds_upload_result.status == 'processing':
+                time.sleep(5)
+            else:
+                break
+
+        if ds_upload_result.status != 'successful':
+            ver_err = '\r\n'.join(ds_upload_result.errors)
+            msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
+            raise Exception(msg)
+
+        return ds_upload_result.dataset
 
 class FileContent(object):
     """Accumulate the data to be used when posting a form."""

@@ -43,15 +43,22 @@ class Dimension(DimensionModel):
         for item in data['items']:
             self.items.append(DimensionMember(item))
 
+    def findmember_by_key(self, member_key):
+        """The method searches member of dimension by given member key"""
+        for item in self.items:
+            if item.key == member_key:
+                return item
+        return None
+
     def findmember_by_id(self, member_id):
-        """The method search member of dimension by given member id"""
+        """The method searches member of dimension by given member id"""
         for item in self.items:
             if 'id' in item.fields and isequal_strings_ignorecase(item.fields['id'], member_id):
                 return item
         return None
 
     def findmember_by_name(self, member_name):
-        """The method search member of dimension by given member name"""
+        """The method searches member of dimension by given member name"""
         for item in self.items:
             if isequal_strings_ignorecase(item.name, member_name):
                 return item
@@ -82,11 +89,19 @@ class Dataset(object):
         for dim in data['dimensions']:
             self.dimensions.append(DimensionModel(dim))
 
-    def find_dimension_by_name(self, name):
+    def find_dimension_by_name(self, dim_name):
         """the method searching dimension with a given name"""
 
         for dim in self.dimensions:
-            if isequal_strings_ignorecase(dim.name, name):
+            if isequal_strings_ignorecase(dim.name, dim_name):
+                return dim
+        return None
+
+    def find_dimension_by_id(self, dim_id):
+        """the method searching dimension with a given id"""
+
+        for dim in self.dimensions:
+            if isequal_strings_ignorecase(dim.id, dim_id):
                 return dim
         return None
 

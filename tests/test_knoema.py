@@ -7,8 +7,8 @@ import knoema
 class TestKnoemaClient(unittest.TestCase):
     """This is class with knoema client unit tests"""
 
-    def test_getdata_singleseries_bydimid(self):
-        """The method is testing getting single series by dimensions ids"""
+    def test_getdata_singleseries_by_member_id(self):
+        """The method is testing getting single series by dimension member ids"""
 
         data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
         self.assertEqual(data_frame.shape[0], 43)
@@ -23,8 +23,8 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 2292.486)
 
-    def test_getdata_multiseries_bydimid(self):
-        """The method is testing getting multiple series by dimensions ids"""
+    def test_getdata_multiseries_by_member_id(self):
+        """The method is testing getting multiple series by dimension member ids"""
 
         data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp')
         self.assertEqual(data_frame.shape[0], 43)
@@ -39,8 +39,8 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 23760.331)
 
-    def test_getdata_multiseries_bydimname(self):
-        """The method is testing getting data by dimensions names"""
+    def test_getdata_multiseries_by_member_name(self):
+        """The method is testing getting data by dimension member names"""
 
         subj_names = 'Gross domestic product, current prices (National currency);population (persons)'
         data_frame = knoema.get('IMFWEO2017Apr', country='albania;afghanistan;united states', subject=subj_names)
@@ -56,8 +56,8 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 23760.331)
 
-    def test_getdata_multiseries_bydimid_range(self):
-        """The method is testing getting multiple series by dimensions ids and time range"""
+    def test_getdata_multiseries_by_member_id_range(self):
+        """The method is testing getting multiple series by dimension member ids and time range"""
 
         data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp', timerange='2015-2020')
         self.assertEqual(data_frame.shape[0], 6)
@@ -72,8 +72,8 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 22063.044)
 
-    def test_getdata_singleseries_difffrequencies_bydimid(self):
-        """The method is testing getting single series on different frequencies by dimensions ids"""
+    def test_getdata_singleseries_difffrequencies_by_member_id(self):
+        """The method is testing getting single series on different frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT', subject='BSCI', measure='blsa')
         self.assertEqual(data_frame.shape[0], 388)
@@ -96,8 +96,8 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(datetime.datetime(2017, 1, 1), sname)
         self.assertEqual(value, 1.566667)
 
-    def test_getdata_multiseries_singlefrequency_bydimid(self):
-        """The method is testing getting mulitple series with one frequency by dimensions ids"""
+    def test_getdata_multiseries_singlefrequency_by_member_id(self):
+        """The method is testing getting mulitple series with one frequency by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q')
         self.assertEqual(data_frame.shape[0], 204)
@@ -107,8 +107,8 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(datetime.datetime(2017, 1, 1), sname)
         self.assertEqual(value, 1.566667)
 
-    def test_getdata_multiseries_multifrequency_bydimid(self):
-        """The method is testing getting mulitple series queriing mulitple frequencies by dimensions ids"""
+    def test_getdata_multiseries_multifrequency_by_member_id(self):
+        """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
         self.assertEqual(data_frame.shape[0], 463)
@@ -118,8 +118,8 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(datetime.datetime(2017, 3, 1), sname)
         self.assertEqual(value, 2.4)
 
-    def test_getdata_multiseries_multifrequency_bydimid_range(self):
-        """The method is testing getting mulitple series queriing mulitple frequencies by dimensions ids with time range"""
+    def test_getdata_multiseries_multifrequency_by_member_id_range(self):
+        """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids with time range"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;BE', subject='BSCI', measure='blsa', frequency='Q;M', timerange='2010M1-2015M12')
         self.assertEqual(data_frame.shape[0], 72)
@@ -254,3 +254,44 @@ class TestKnoemaClient(unittest.TestCase):
                                      'Loan status': 'EFFECTIVE'})
 
         self.assertTrue("The following dimension(s) are not set: Currency of Commitment, Measure" in str(context.exception))
+
+    def test_getdata_multiseries_by_member_key(self):
+        """The method is testing getting multiple series by dimension member keys"""
+
+        data_frame = knoema.get('IMFWEO2017Apr', country='1000010;1000000;1001830', subject='1000370;1000040')
+        self.assertEqual(data_frame.shape[0], 43)
+        self.assertEqual(data_frame.shape[1], 6)
+
+        indx = data_frame.first_valid_index()
+        sname = 'United States - Gross domestic product, current prices (National currency) - A'
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 2862.475)
+
+        indx = data_frame.last_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 23760.331)
+
+    def test_get_data_from_dataset_by_dim_ids(self):
+        """The method is testing load data from regular dataset with dimenions that have multi word names by dim ids"""
+
+        data_frame = knoema.get('FDI_FLOW_CTRY', **{'Reporting-country': 'AUS',
+                                                    'Partner-country': 'w0',
+                                                    'Measurement-principle': 'DI',
+                                                    'Type-of-FDI': 'T_FA_F',
+                                                    'Type-of-entity': 'ALL',
+                                                    'Accounting-entry': 'NET',
+                                                    'Level-of-counterpart': 'IMC',
+                                                    'Currency': 'USD'})
+
+        self.assertEqual(data_frame.shape[0], 7)
+        self.assertEqual(data_frame.shape[1], 1)
+
+        sname = 'Australia - WORLD - Directional principle: Inward - FDI financial flows - Total - All resident units - Net - Immediate counterpart (Immediate investor or immediate host) - US Dollar - A'
+
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 31666.667, 3)
+
+        indx = data_frame.last_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 22267.638, 3)

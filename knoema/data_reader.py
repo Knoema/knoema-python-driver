@@ -26,17 +26,28 @@ class DataReader(object):
 
         members = []
         for value in splited_values:
-            if not value:
+            if value is None:
                 raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
             member = dim.findmember_by_id(value)
-            if not member:
+            if member is None:
                 member = dim.findmember_by_name(value)
+
+            if member is None and value.isnumeric():
+                member = dim.findmember_by_key(int(value))
 
             if member:
                 members.append(member.key)
 
         return members
+
+    def _find_dmension(self, dim_name_or_id):
+
+        dim = self.dataset.find_dimension_by_name(dim_name_or_id)
+        if dim is None:
+            dim = self.dataset.find_dimension_by_id(dim_name_or_id)
+
+        return dim
 
     def _create_pivot_request(self):
 
@@ -54,9 +65,9 @@ class DataReader(object):
                 pivotreq.frequencies = splited_values
                 continue
 
-            dim = self.dataset.find_dimension_by_name(name)
-            if not dim:
-                raise ValueError('Dimension with name {} is not found'.
+            dim = self._find_dmension(name)
+            if dim is None:
+                raise ValueError('Dimension with id or name {} is not found'.
                                  format(name))
 
             filter_dims.append(dim)

@@ -13,12 +13,7 @@ class DataReader(object):
         self.dim_values = dim_values
 
     def _ensure_alldimenions_in_filter(self, filter_dims):
-
-        out_of_filter_dim_names = []
-        for dim in self.dataset.dimensions:
-            if dim not in filter_dims:
-                out_of_filter_dim_names.append(dim.name)
-
+        out_of_filter_dim_names = [dim.name for dim in self.dataset.dimensions if dim not in filter_dims]
         if out_of_filter_dim_names:
             raise ValueError('The following dimension(s) are not set: {}'.format(', '.join(out_of_filter_dim_names)))
 

@@ -5,12 +5,10 @@ from datetime import datetime
 
 def isequal_strings_ignorecase(first, second):
     """The function compares strings ignoring case"""
-    try:
+    if first and second:
         return first.upper() == second.upper()
-    except AttributeError:
-        if not first:
-            if not second:
-                return True
+    else:
+        return not (first or second)
 
 
 class DimensionMember(object):
@@ -38,10 +36,7 @@ class Dimension(DimensionModel):
 
     def __init__(self, data):
         super().__init__(data)
-
-        self.items = []
-        for item in data['items']:
-            self.items.append(DimensionMember(item))
+        self.items = [DimensionMember(item) for item in data['items']]
 
     def findmember_by_key(self, member_key):
         """The method searches member of dimension by given member key"""
@@ -84,10 +79,7 @@ class Dataset(object):
             raise ValueError(data)
 
         self.id = data['id']
-
-        self.dimensions = []
-        for dim in data['dimensions']:
-            self.dimensions.append(DimensionModel(dim))
+        self.dimensions = [DimensionModel(dim) for dim in data['dimensions']]
 
     def find_dimension_by_name(self, dim_name):
         """the method searching dimension with a given name"""
@@ -132,7 +124,7 @@ class PivotRequest(object):
         self.filter = []
         self.frequencies = []
 
-    def _getitemarr(self, items):
+    def _get_item_array(self, items):
         arr = []
         for item in items:
             itemvalues = {
@@ -144,13 +136,13 @@ class PivotRequest(object):
             arr.append(itemvalues)
         return arr
 
-    def savetojson(self):
+    def save_to_json(self):
         """The method saves data to json from object"""
         requestvalues = {
             'Dataset': self.dataset,
-            'Header' : self._getitemarr(self.header),
-            'Filter' : self._getitemarr(self.filter),
-            'Stub' : self._getitemarr(self.stub),
+            'Header' : self._get_item_array(self.header),
+            'Filter' : self._get_item_array(self.filter),
+            'Stub' : self._get_item_array(self.stub),
             'Frequencies': self.frequencies
         }
         return json.dumps(requestvalues)
@@ -219,7 +211,7 @@ class DatasetUpload(object):
         self.name = None
         self.dataset = None
 
-    def savetojson(self):
+    def save_to_json(self):
         """The method saves DatasetUpload to json from object"""
         requestvalues = {
             'DatasetId': self.dataset,

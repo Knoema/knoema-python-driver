@@ -22,6 +22,9 @@ def _string_to_binary(string_data):
 def _crlf():
     return _string_to_binary('\r\n')
 
+def _response_to_json(resp):
+    str_response = resp.read().decode('utf-8')
+    return json.loads(str_response)
 
 class ApiClient:
     """This is client that wrap requests and response to Knoema API"""
@@ -59,20 +62,20 @@ class ApiClient:
         req = urllib.request.Request(url, headers=headers)
         resp = urllib.request.urlopen(req)
 
-        return obj(json.load(resp))
+        return obj(_response_to_json(resp))
 
     def _api_post(self, responseobj, apipath, requestobj):
 
         url = self._get_url(apipath)
 
-        jsondata = requestobj.savetojson()
-        binary_data = jsondata.encode()
+        json_data = requestobj.save_to_json()
+        binary_data = json_data.encode()
 
         headers = self._get_request_headers()
         req = urllib.request.Request(url, binary_data, headers)
         resp = urllib.request.urlopen(req)
 
-        return responseobj(json.load(resp))
+        return responseobj(_response_to_json(resp))
 
     def get_dataset(self, datasetid):
         """The method is getting information about dataset byt it's id"""
@@ -112,7 +115,8 @@ class ApiClient:
         req.add_header('Content-length', len(binary_data))
 
         resp = urllib.request.urlopen(req)
-        return definition.UploadPostResponse(json.load(resp))
+
+        return definition.UploadPostResponse(_response_to_json(resp))
 
     def upload_verify(self, file_location, dataset=None):
         """This method is verifiing posted file on server"""

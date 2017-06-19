@@ -151,7 +151,7 @@ class TestKnoemaClient(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             knoema.get('IMFWEO2017Apr', indicator='LP;NGDP')
 
-        self.assertTrue('Dimension with name indicator is not found' in str(context.exception))
+        self.assertTrue('Dimension with id or name indicator is not found' in str(context.exception))
 
     def test_empty_dimension_selection(self):
         """The method is testing if there are no elements in dimension selection"""

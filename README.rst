@@ -10,11 +10,11 @@ Installation
 
 The installation process varies depending on your python version and system used. However, in most cases, the following should work::
 
-        pip install --extra-index-url https://testpypi.python.org/pypi knoema 
+        pip install knoema 
 
 Alternatively, on some systems, python3 may use a different pip executable and may need to be installed via an alternate pip command. For example::
 
-        pip3 install --extra-index-url https://testpypi.python.org/pypi knoema
+        pip3 install knoema
                 
 *************
 Configuration

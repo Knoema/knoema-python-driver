@@ -47,8 +47,8 @@ where:
 
 * 'IMFWEO2017Apr' this is a public dataset, that available for all users by reference https://knoema.com/IMFWEO2017Apr.
 * country and subject are dimensions names
-* '914' is code of country *Albania*
-* 'ngdp' is code of subject *Gross domestic product, current prices (U.S. dollars)*
+* '914' is id of country *Albania*
+* 'ngdp' is id of subject *Gross domestic product, current prices (U.S. dollars)*
 
 This example finds all data points for the dataset IMFWEO2017Apr with selection by country = *Albania* and subject =  *Gross domestic product, current prices (U.S. dollars)* and stores this series in a pandas dataframe. You can then view the dataframe with operations *data_frame.head()* or *print(date_frame)*
 

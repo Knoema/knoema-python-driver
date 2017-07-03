@@ -76,7 +76,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting single series on different frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT', subject='BSCI', measure='blsa')
-        self.assertEqual(data_frame.shape[0], 388)
+        self.assertEqual(data_frame.shape[0], 389)
         self.assertEqual(data_frame.shape[1], 2)
 
         indx = data_frame.first_valid_index()
@@ -86,7 +86,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.last_valid_index()
         value = data_frame.get_value(indx, sname)
-        self.assertEqual(value, 1.9)
+        self.assertEqual(value, 2.0)
 
         indx = data_frame.first_valid_index()
         sname = 'Austria - Confidence indicators - Balance, s.a. - Q'
@@ -111,7 +111,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
-        self.assertEqual(data_frame.shape[0], 463)
+        self.assertEqual(data_frame.shape[0], 464)
         self.assertEqual(data_frame.shape[1], 3)
 
         sname = 'Austria - Confidence indicators - Balance, s.a. - M'

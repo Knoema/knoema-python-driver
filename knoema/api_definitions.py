@@ -189,6 +189,19 @@ class UploadPostResponse(object):
         self.properties = FileProperties(data['Properties'])
 
 
+class UploadDatasetDetails(object):
+    """The class contains dataset details from verify result response"""
+
+    def __init__(self, data):
+        self.dataset_id = data['DatasetId']
+        self.dataset_name = data['DatasetName']
+        self.source = data['Source']
+        self.description = data['Description']
+        self.dataset_ref = data['DatasetRef']
+        self.publication_date = data['PublicationDate'] if 'PublicationDate' in data else None
+        self.accessed_on = data['AccessedOn'] if 'AccessedOn' in data else None
+
+
 class UploadVerifyResponse(object):
     """The class contains response from upload post request"""
 
@@ -198,24 +211,38 @@ class UploadVerifyResponse(object):
         self.errors = data['ErrorList'] if 'ErrorList' in data else None
         self.columns = data['Columns'] if 'Columns' in data else None
         self.flat_ds_update_options = data['FlatDSUpdateOptions'] if 'FlatDSUpdateOptions' in data else None
+        self.metadata_details = UploadDatasetDetails(data['MetadataDetails']) if 'MetadataDetails' in data and data['MetadataDetails'] is not None else None
 
 
 class DatasetUpload(object):
     """The class contains request for UploadSubmit"""
 
-    def __init__(self):
-        self.upload_format_type = None
-        self.columns = None
-        self.flat_ds_update_options = None
-        self.file_property = None
-        self.name = None
-        self.dataset = None
+    def __init__(self, verify_result, upload_result, dataset=None):
+        self.dataset = dataset
+
+        self.upload_format_type = verify_result.upload_format_type
+        self.columns = verify_result.columns
+        self.file_property = upload_result.properties
+        self.flat_ds_update_options = verify_result.flat_ds_update_options
+
+        dataset_details = verify_result.metadata_details
+        self.name = dataset_details.dataset_name if dataset_details and dataset_details.dataset_name else 'New dataset'
+        self.description = dataset_details.description if dataset_details else None
+        self.source = dataset_details.source if dataset_details else None
+        self.publication_date = dataset_details.publication_date if dataset_details else None
+        self.accessed_on = dataset_details.accessed_on if dataset_details else None
+        self.dataset_ref = dataset_details.dataset_ref if dataset_details else None
 
     def save_to_json(self):
         """The method saves DatasetUpload to json from object"""
         requestvalues = {
             'DatasetId': self.dataset,
             'Name': self.name,
+            'Description': self.description,
+            'Source': self.source,
+            'PubDate': self.publication_date,
+            'AccessedOn': self.accessed_on,
+            'Url': self.dataset_ref,
             'UploadFormatType': self.upload_format_type,
             'Columns': self.columns,
             'FileProperty': self.file_property.__dict__,

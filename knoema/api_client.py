@@ -157,15 +157,7 @@ class ApiClient:
             msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
             raise Exception(msg)
 
-        ds_upload = definition.DatasetUpload()
-        ds_upload.upload_format_type = upload_ver_status.upload_format_type
-        ds_upload.columns = upload_ver_status.columns
-        ds_upload.file_property = upload_status.properties
-        ds_upload.flat_ds_update_options = upload_ver_status.flat_ds_update_options
-        ds_upload.dataset = dataset
-        if not dataset:
-            ds_upload.name = 'New dataset'
-
+        ds_upload = definition.DatasetUpload(upload_ver_status, upload_status, dataset)
         ds_upload_submit_result = self.upload_submit(ds_upload)
         err_msg = 'Dataset has been saved to the database'
         if ds_upload_submit_result.status == 'failed':

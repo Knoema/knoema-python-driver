@@ -1,5 +1,7 @@
 """This module contains Api configuration class"""
 
+import os
+
 class ApiConfig(object):
     """
     This class configures knoema api.
@@ -18,7 +20,7 @@ class ApiConfig(object):
     def __new__(cls):
         if not hasattr(cls, 'instance'):
             cls.instance = super(ApiConfig, cls).__new__(cls)
-            cls.instance.host = 'knoema.com'
+            cls.instance.host = os.environ['KNOEMA_HOST'] if 'KNOEMA_HOST' in os.environ else 'knoema.com'
             cls.instance.app_id = None
             cls.instance.app_secret = None
         return cls.instance

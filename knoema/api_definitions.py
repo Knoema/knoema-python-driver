@@ -269,3 +269,32 @@ class DatasetUploadStatusResponse(object):
         self.dataset = data['datasetId'] if 'datasetId' in data else None
         self.status = data['status'] if 'status' in data else 'failed'
         self.errors = data['errors'] if 'errors' in data else None
+
+
+class DatasetVerifyRequest(object):
+    """The class contains dataset verification request"""
+
+    def __init__(self, dataset, publication_date, source, refernce_url):
+        self.dataset = dataset
+        self.publication_date = publication_date
+        self.source = source
+        self.refernce_url = refernce_url
+
+    def save_to_json(self):
+        """The method saves data to json from object"""
+
+        requestvalues = {
+            'id': self.dataset,
+            'publicationDate': self.publication_date.strftime('%Y-%m-%d'),
+            'source': self.source,
+            'refUrl': self.refernce_url,
+        }        
+        return json.dumps(requestvalues)
+
+
+class DatasetVerifyResponse(object):
+    """The class contains response from dataset verification request"""
+
+    def __init__(self, data):
+        self.status = data['status']
+        self.errors = data['errors'] if 'errors' in data else None

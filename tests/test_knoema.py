@@ -3,6 +3,7 @@
 import unittest
 import datetime
 import knoema
+import urllib
 
 class TestKnoemaClient(unittest.TestCase):
     """This is class with knoema client unit tests"""
@@ -76,7 +77,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting single series on different frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT', subject='BSCI', measure='blsa')
-        self.assertEqual(data_frame.shape[0], 389)
+        self.assertEqual(data_frame.shape[0], 390)
         self.assertEqual(data_frame.shape[1], 2)
 
         indx = data_frame.first_valid_index()
@@ -100,7 +101,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting mulitple series with one frequency by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q')
-        self.assertEqual(data_frame.shape[0], 204)
+        self.assertEqual(data_frame.shape[0], 205)
         self.assertEqual(data_frame.shape[1], 2)
 
         sname = 'Austria - Confidence indicators - Balance, s.a. - Q'
@@ -111,7 +112,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
-        self.assertEqual(data_frame.shape[0], 464)
+        self.assertEqual(data_frame.shape[0], 465)
         self.assertEqual(data_frame.shape[1], 3)
 
         sname = 'Austria - Confidence indicators - Balance, s.a. - M'
@@ -253,7 +254,7 @@ class TestKnoemaClient(unittest.TestCase):
                                      'Loan type': 'B loan',
                                      'Loan status': 'EFFECTIVE'})
 
-        self.assertTrue("The following dimension(s) are not set: Currency of Commitment, Measure" in str(context.exception))
+        self.assertTrue('The following dimension(s) are not set: Currency of Commitment, Measure' in str(context.exception))
 
     def test_getdata_multiseries_by_member_key(self):
         """The method is testing getting multiple series by dimension member keys"""
@@ -295,3 +296,17 @@ class TestKnoemaClient(unittest.TestCase):
         indx = data_frame.last_valid_index()
         value = data_frame.get_value(indx, sname)
         self.assertAlmostEqual(value, 22267.638, 3)
+
+    def test_delete_dataset_negative(self):
+        """The method is negative test on dataset deletion"""
+
+        with self.assertRaises(urllib.error.HTTPError) as context:
+            knoema.delete('non_existing_id')
+        self.assertTrue('HTTP Error 400: Bad Request' in str(context.exception))
+
+    def test_verify_dataset_negative(self):
+        """The method is negative test on dataset verification"""
+
+        with self.assertRaises(ValueError) as context:
+            knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
+        self.assertTrue("Dataset has not been verified, because of the the following error(s): Requested dataset doesn't exist or you don't have access to it." in str(context.exception))

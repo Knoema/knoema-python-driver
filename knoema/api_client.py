@@ -148,22 +148,22 @@ class ApiClient:
         err_msg = 'Dataset has not been uploaded to the remote host'
         if not upload_status.successful:
             msg = '{}, because of the the following error: {}'.format(err_msg, upload_status.error)
-            raise Exception(msg)
+            raise ValueError(msg)
 
-        err_msg = 'Dataset has been verified with errors'
+        err_msg = 'File has not been verified'
         upload_ver_status = self.upload_verify(upload_status.properties.location, dataset)
         if not upload_ver_status.successful:
             ver_err = '\r\n'.join(upload_ver_status.errors)
             msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
-            raise Exception(msg)
+            raise ValueError(msg)
 
         ds_upload = definition.DatasetUpload(upload_ver_status, upload_status, dataset)
         ds_upload_submit_result = self.upload_submit(ds_upload)
-        err_msg = 'Dataset has been saved to the database'
+        err_msg = 'Dataset has not been saved to the database'
         if ds_upload_submit_result.status == 'failed':
             ver_err = '\r\n'.join(ds_upload_submit_result.errors)
             msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
-            raise Exception(msg)
+            raise ValueError(msg)
 
         ds_upload_result = None
         while True:
@@ -176,9 +176,37 @@ class ApiClient:
         if ds_upload_result.status != 'successful':
             ver_err = '\r\n'.join(ds_upload_result.errors)
             msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
-            raise Exception(msg)
+            raise ValueError(msg)
 
         return ds_upload_result.dataset
+
+    def delete(self, dataset):
+        """The method is deleting dataset by it's id"""
+
+        url = self._get_url('/api/1.0/meta/dataset/{}/delete'.format(dataset))
+
+        json_data = ''
+        binary_data = json_data.encode()
+
+        headers = self._get_request_headers()
+        req = urllib.request.Request(url, binary_data, headers)
+        resp = urllib.request.urlopen(req)
+        str_response = resp.read().decode('utf-8')
+        if str_response != '"successful"':
+            msg = 'Dataset has not been deleted, because of the the following error(s): {}'.format(str_response)
+            raise ValueError(msg)
+
+    def verify(self, dataset, publication_date, source, refernce_url):
+        """The method is verifying dataset by it's id"""
+
+        path = '/api/1.0/meta/verifydataset'
+        req = definition.DatasetVerifyRequest(dataset, publication_date, source, refernce_url)
+        result = self._api_post(definition.DatasetVerifyResponse, path, req)
+        if result.status == 'failed':
+            ver_err = '\r\n'.join(result.errors)
+            msg = 'Dataset has not been verified, because of the the following error(s): {}'.format(ver_err)
+            raise ValueError(msg)
+
 
 class FileContent(object):
     """Accumulate the data to be used when posting a form."""

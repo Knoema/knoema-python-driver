@@ -88,3 +88,34 @@ if you have access rights and file for uploading, use the next code::
 or::
 
     knoema.upload('C:\\Path\\File.zip', 'dataset_id')
+
+
+******************
+Verifying Dataset
+******************
+In order to verify the dataset, you must have the access rights to do this. For this, you need to specify the appropriate parameters app_id and app_secret. See section *Configuration*.
+
+if you have access rights and file for uploading, use the next code::
+
+    knoema.verify('dataset_id', 'publication_date', 'source', 'refernce_url')
+
+where:
+
+* 'dataset_id' - the string variable which should provide id of the dataset that is going to be verified
+* 'publication_date' - the datetime variable which should provide the date when dataset has been published
+* 'source' - the string variable which should provide the source for the dataset (e.g. IMF)
+* 'refernce_url' - the string variable which should provide URL to the source or a site from where the dataset has been downloaded
+
+
+******************
+Deleting Dataset
+******************
+In order to delete the dataset, you must have the access rights to do this. For this, you need to specify the appropriate parameters app_id and app_secret. See section *Configuration*.
+
+if you have access rights and file for uploading, use the next code::
+
+    knoema.delete('dataset_id')
+
+where:
+
+* 'dataset_id' - the string variable which should provide id of the dataset that is going to be deleted

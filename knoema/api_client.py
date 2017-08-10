@@ -122,9 +122,9 @@ class ApiClient:
         """This method is verifiing posted file on server"""
 
         path = '/api/1.0/upload/verify'
-        query = 'filePath={}'.format(file_location)
+        query = 'doNotGenerateAdvanceReport=true&filePath={}'.format(file_location)
         if dataset:
-            query = 'filePath={}&datasetId={}'.format(file_location, dataset)
+            query = 'doNotGenerateAdvanceReport=true&filePath={}&datasetId={}'.format(file_location, dataset)
 
         return self._api_get(definition.UploadVerifyResponse, path, query)
 

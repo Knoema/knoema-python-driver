@@ -217,7 +217,7 @@ class UploadVerifyResponse(object):
 class DatasetUpload(object):
     """The class contains request for UploadSubmit"""
 
-    def __init__(self, verify_result, upload_result, dataset=None):
+    def __init__(self, verify_result, upload_result, dataset=None, public = False):
         self.dataset = dataset
 
         self.upload_format_type = verify_result.upload_format_type
@@ -232,6 +232,7 @@ class DatasetUpload(object):
         self.publication_date = dataset_details.publication_date if dataset_details else None
         self.accessed_on = dataset_details.accessed_on if dataset_details else None
         self.dataset_ref = dataset_details.dataset_ref if dataset_details else None
+        self.public = public
 
     def save_to_json(self):
         """The method saves DatasetUpload to json from object"""
@@ -246,7 +247,8 @@ class DatasetUpload(object):
             'UploadFormatType': self.upload_format_type,
             'Columns': self.columns,
             'FileProperty': self.file_property.__dict__,
-            'FlatDSUpdateOptions': self.flat_ds_update_options
+            'FlatDSUpdateOptions': self.flat_ds_update_options,
+            'Public': self.public
         }
         return json.dumps(requestvalues)
 

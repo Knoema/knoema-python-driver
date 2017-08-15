@@ -83,11 +83,15 @@ In order to update the dataset, you must have the access rights to do this. For 
 
 if you have access rights and file for uploading, use the next code::
 
-    knoema.upload('C:\\Path\\File.csv', 'dataset_id')
+    knoema.upload(file_path, dataset=None, public=False)
 
-or::
+where:
 
-    knoema.upload('C:\\Path\\File.zip', 'dataset_id')
+* file_path - the string variable which provides path to the file which will be uploaded to the dataset,
+* dataset - the string variable which provides id of the dataset that is going to be updated from the file. If dataset is None then new dataset will be created  based on the file,
+* public - the boolean variable which makes dataset public if public flag is true. Default value is false.
+
+The function returns dataset id if upload is succesfull and raise an exception otherwise.
 
 
 ******************

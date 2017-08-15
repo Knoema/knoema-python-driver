@@ -141,7 +141,7 @@ class ApiClient:
         query = 'id={}'.format(upload_id)
         return self._api_get(definition.DatasetUploadStatusResponse, path, query)
 
-    def upload(self, file_path, dataset=None):
+    def upload(self, file_path, dataset=None, public=False):
         """Use this function to upload data to Knoema dataset."""
 
         upload_status = self.upload_file(file_path)
@@ -157,7 +157,7 @@ class ApiClient:
             msg = '{}, because of the following error(s): {}'.format(err_msg, ver_err)
             raise ValueError(msg)
 
-        ds_upload = definition.DatasetUpload(upload_ver_status, upload_status, dataset)
+        ds_upload = definition.DatasetUpload(upload_ver_status, upload_status, dataset, public)
         ds_upload_submit_result = self.upload_submit(ds_upload)
         err_msg = 'Dataset has not been saved to the database'
         if ds_upload_submit_result.status == 'failed':

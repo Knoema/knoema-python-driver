@@ -147,14 +147,14 @@ class ApiClient:
         upload_status = self.upload_file(file_path)
         err_msg = 'Dataset has not been uploaded to the remote host'
         if not upload_status.successful:
-            msg = '{}, because of the the following error: {}'.format(err_msg, upload_status.error)
+            msg = '{}, because of the following error: {}'.format(err_msg, upload_status.error)
             raise ValueError(msg)
 
         err_msg = 'File has not been verified'
         upload_ver_status = self.upload_verify(upload_status.properties.location, dataset)
         if not upload_ver_status.successful:
             ver_err = '\r\n'.join(upload_ver_status.errors)
-            msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
+            msg = '{}, because of the following error(s): {}'.format(err_msg, ver_err)
             raise ValueError(msg)
 
         ds_upload = definition.DatasetUpload(upload_ver_status, upload_status, dataset)
@@ -162,7 +162,7 @@ class ApiClient:
         err_msg = 'Dataset has not been saved to the database'
         if ds_upload_submit_result.status == 'failed':
             ver_err = '\r\n'.join(ds_upload_submit_result.errors)
-            msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
+            msg = '{}, because of the following error(s): {}'.format(err_msg, ver_err)
             raise ValueError(msg)
 
         ds_upload_result = None
@@ -175,7 +175,7 @@ class ApiClient:
 
         if ds_upload_result.status != 'successful':
             ver_err = '\r\n'.join(ds_upload_result.errors)
-            msg = '{}, because of the the following error(s): {}'.format(err_msg, ver_err)
+            msg = '{}, because of the following error(s): {}'.format(err_msg, ver_err)
             raise ValueError(msg)
 
         return ds_upload_result.dataset
@@ -193,7 +193,7 @@ class ApiClient:
         resp = urllib.request.urlopen(req)
         str_response = resp.read().decode('utf-8')
         if str_response != '"successful"':
-            msg = 'Dataset has not been deleted, because of the the following error(s): {}'.format(str_response)
+            msg = 'Dataset has not been deleted, because of the following error(s): {}'.format(str_response)
             raise ValueError(msg)
 
     def verify(self, dataset, publication_date, source, refernce_url):
@@ -204,7 +204,7 @@ class ApiClient:
         result = self._api_post(definition.DatasetVerifyResponse, path, req)
         if result.status == 'failed':
             ver_err = '\r\n'.join(result.errors)
-            msg = 'Dataset has not been verified, because of the the following error(s): {}'.format(ver_err)
+            msg = 'Dataset has not been verified, because of the following error(s): {}'.format(ver_err)
             raise ValueError(msg)
 
 

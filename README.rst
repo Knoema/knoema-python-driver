@@ -93,9 +93,9 @@ or::
 ******************
 Verifying Dataset
 ******************
-In order to verify the dataset, you must have the access rights to do this. For this, you need to specify the appropriate parameters app_id and app_secret. See section *Configuration*.
+In order to verify the dataset, you must have the access rights to do this. Please check if you are allowed to verify dataset with your Portal administrator and specify the appropriate parameters app_id and app_secret. See section *Configuration*.
 
-if you have access rights and file for uploading, use the next code::
+if you have access rights, use the next code::
 
     knoema.verify('dataset_id', 'publication_date', 'source', 'refernce_url')
 
@@ -112,7 +112,7 @@ Deleting Dataset
 ******************
 In order to delete the dataset, you must have the access rights to do this. For this, you need to specify the appropriate parameters app_id and app_secret. See section *Configuration*.
 
-if you have access rights and file for uploading, use the next code::
+if you have access rights, use the next code::
 
     knoema.delete('dataset_id')
 

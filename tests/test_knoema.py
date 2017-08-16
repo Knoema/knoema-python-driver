@@ -309,4 +309,4 @@ class TestKnoemaClient(unittest.TestCase):
 
         with self.assertRaises(ValueError) as context:
             knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
-        self.assertTrue("Dataset has not been verified, because of the the following error(s): Requested dataset doesn't exist or you don't have access to it." in str(context.exception))
+        self.assertTrue("Dataset has not been verified, because of the following error(s): Requested dataset doesn't exist or you don't have access to it." in str(context.exception))

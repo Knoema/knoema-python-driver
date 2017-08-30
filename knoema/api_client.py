@@ -24,7 +24,15 @@ def _crlf():
 
 def _response_to_json(resp):
     str_response = resp.read().decode('utf-8')
-    return json.loads(str_response)
+
+    if resp.status < 200 or resp.status >= 300:
+        raise ValueError('Error {} from server:{}', resp.status, str_response)
+
+    obj_resp = json.loads(str_response)
+    if isinstance(obj_resp, str):
+        raise ValueError(obj_resp)
+
+    return obj_resp
 
 class ApiClient:
     """This is client that wrap requests and response to Knoema API"""
@@ -192,7 +200,7 @@ class ApiClient:
         req = urllib.request.Request(url, binary_data, headers)
         resp = urllib.request.urlopen(req)
         str_response = resp.read().decode('utf-8')
-        if str_response != '"successful"':
+        if str_response != '"successful"' or resp.status < 200 or resp.status >= 300:
             msg = 'Dataset has not been deleted, because of the following error(s): {}'.format(str_response)
             raise ValueError(msg)
 

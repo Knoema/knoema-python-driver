@@ -88,7 +88,7 @@ class DataReader(object):
         for dim in self.dataset.dimensions:
             names.append(series_point[dim.id])
         names.append(series_point['Frequency'])
-        return ' - '.join(names)
+        return tuple(names)
 
     def _get_series(self, resp):
         series = {}
@@ -124,6 +124,10 @@ class DataReader(object):
 
         pandas_data_frame = pandas.DataFrame(pandas_series)
         pandas_data_frame.sort_index()
+
+        if isinstance(pandas_data_frame.columns, pandas.MultiIndex):
+            pandas_data_frame.columns.names = [d.name for d in self.dataset.dimensions] + ['Frequency']
+
         return pandas_data_frame
 
 

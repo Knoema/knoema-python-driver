@@ -100,7 +100,7 @@ class TestKnoemaClient(unittest.TestCase):
     def test_getdata_multiseries_singlefrequency_by_member_id(self):
         """The method is testing getting mulitple series with one frequency by dimension member ids"""
 
-        data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q')
+        data_frame = knoema.get('MEI_BTS_COS_2015', location=['AT', 'AU'], subject='BSCI', measure='blsa', frequency='Q')
         self.assertEqual(data_frame.shape[0], 205)
         self.assertEqual(data_frame.shape[1], 2)
 

@@ -15,8 +15,10 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 43)
         self.assertEqual(data_frame.shape[1], 1)
 
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
+
         indx = data_frame.first_valid_index()
-        sname = 'Albania - Gross domestic product, current prices (National currency) - A'
+        sname = ('Albania', 'Gross domestic product, current prices (National currency)', 'A')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 18.489)
 
@@ -31,8 +33,10 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 43)
         self.assertEqual(data_frame.shape[1], 6)
 
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
+
         indx = data_frame.first_valid_index()
-        sname = 'United States - Gross domestic product, current prices (National currency) - A'
+        sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 2862.475)
 
@@ -49,7 +53,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 6)
 
         indx = data_frame.first_valid_index()
-        sname = 'United States - Gross domestic product, current prices (National currency) - A'
+        sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 2862.475)
 
@@ -65,7 +69,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 6)
 
         indx = data_frame.first_valid_index()
-        sname = 'United States - Gross domestic product, current prices (National currency) - A'
+        sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 18036.650)
 
@@ -81,7 +85,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 2)
 
         indx = data_frame.first_valid_index()
-        sname = 'Austria - Confidence indicators - Balance, s.a. - M'
+        sname = ('Austria', 'Confidence indicators', 'Balance, s.a.', 'M')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, -5.0)
 
@@ -90,7 +94,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(value, 2.0)
 
         indx = data_frame.first_valid_index()
-        sname = 'Austria - Confidence indicators - Balance, s.a. - Q'
+        sname = ('Austria', 'Confidence indicators', 'Balance, s.a.', 'Q')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, -5.233333)
 
@@ -104,7 +108,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 205)
         self.assertEqual(data_frame.shape[1], 2)
 
-        sname = 'Austria - Confidence indicators - Balance, s.a. - Q'
+        sname = ('Austria', 'Confidence indicators', 'Balance, s.a.', 'Q')
         value = data_frame.get_value(datetime.datetime(2017, 1, 1), sname)
         self.assertEqual(value, 1.566667)
 
@@ -115,7 +119,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 465)
         self.assertEqual(data_frame.shape[1], 3)
 
-        sname = 'Austria - Confidence indicators - Balance, s.a. - M'
+        sname = ('Austria', 'Confidence indicators', 'Balance, s.a.', 'M')
         value = data_frame.get_value(datetime.datetime(2017, 3, 1), sname)
         self.assertEqual(value, 2.4)
 
@@ -126,7 +130,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 72)
         self.assertEqual(data_frame.shape[1], 3)
 
-        sname = 'Austria - Confidence indicators - Balance, s.a. - M'
+        sname = ('Austria', 'Confidence indicators', 'Balance, s.a.', 'M')
         value = data_frame.get_value(datetime.datetime(2012, 12, 1), sname)
         self.assertEqual(value, -12.4)
 
@@ -177,7 +181,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 1)
         self.assertEqual(data_frame.shape[1], 4)
 
-        sname = 'Albania - FGP - D'
+        sname = ('Albania', 'FGP', 'D')
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 8.0)
 
@@ -196,7 +200,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 7)
         self.assertEqual(data_frame.shape[1], 1)
 
-        sname = 'Australia - WORLD - Directional principle: Inward - FDI financial flows - Total - All resident units - Net - Immediate counterpart (Immediate investor or immediate host) - US Dollar - A'
+        sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows', 'Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
 
         indx = data_frame.first_valid_index()
         value = data_frame.get_value(indx, sname)
@@ -220,7 +224,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 1)
         self.assertEqual(data_frame.shape[1], 1)
 
-        sname = 'Albania - Ministry of Finance - Albania - B LOAN - EFFECTIVE - EUR - Interest Rate - D'
+        sname = ('Albania', 'Ministry of Finance', 'Albania', 'B LOAN', 'EFFECTIVE', 'EUR', 'Interest Rate', 'D')
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 0.0)
 
@@ -233,7 +237,8 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 1)
         self.assertEqual(data_frame.shape[1], 1)
 
-        value = data_frame.get_value('All time', 'Airports - Bakel Airport - D')
+        sname = ('Airports', 'Bakel Airport', 'D')
+        value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 1.0)
 
     def test_incorrect_dataset_id(self):
@@ -264,7 +269,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 6)
 
         indx = data_frame.first_valid_index()
-        sname = 'United States - Gross domestic product, current prices (National currency) - A'
+        sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 2862.475)
 
@@ -287,7 +292,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 7)
         self.assertEqual(data_frame.shape[1], 1)
 
-        sname = 'Australia - WORLD - Directional principle: Inward - FDI financial flows - Total - All resident units - Net - Immediate counterpart (Immediate investor or immediate host) - US Dollar - A'
+        sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows', 'Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
 
         indx = data_frame.first_valid_index()
         value = data_frame.get_value(indx, sname)

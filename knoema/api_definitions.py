@@ -31,13 +31,22 @@ class DimensionModel(object):
         self.name = data['name']
 
 
-class Dimension(DimensionModel):
+class DimensionModelWithAttributes(object):
+    """The class contains dimension description"""
+    def __init__(self, data):
+        self.key = data['key']
+        self.id = data['id']
+        self.name = data['name']
+        self.fields = data ['fields']
+
+
+class Dimension(DimensionModelWithAttributes):
     """The class contains dimension description and dimnesion items"""
 
     def __init__(self, data):
         super().__init__(data)
         self.items = [DimensionMember(item) for item in data['items']]
-
+        
     def findmember_by_key(self, member_key):
         """The method searches member of dimension by given member key"""
         for item in self.items:

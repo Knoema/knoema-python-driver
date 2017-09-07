@@ -54,10 +54,15 @@ This example finds all data points for the dataset IMFWEO2017Apr with selection 
 
 Please note that you need to identify all dimensions of the dataset, and for each dimension to indicate the selection. Otherwise, the method returns an error.
 
-For multiple selection you can use the next example::
+For multiple selection you can use the next examples::
   
     import knoema
     data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp')
+
+or
+    import knoema
+    data_frame = knoema.get('IMFWEO2017Apr', country=['914','512','111'], subject=['lp','ngdp'])
+
 
 For case when the dimensions of dataset that have multi word names use the next example::
 
@@ -75,6 +80,14 @@ In addition to the required using of the selections for dimensions, you can addi
 
     import knoema
     data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp', frequency='A', timerange='2007-2017')
+
+******************
+Retrieving series from datasets including metadata
+******************
+By default the function knoema.get returns the one dataframe with data. If you want also get information about metadata(attributes, unit, scale, mnemonics), include the additional parameter in your function, like this:
+     import knoema
+     data, metadata = knoema.get('IMFWEO2017Apr', True, country=['914','512'], subject='lp')
+The function, in this case, returns two dataframes - one with data, second with metadata.    
 
 ******************
 Uploading Dataset

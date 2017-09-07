@@ -22,7 +22,7 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 18.489)
 
-        indx = data_frame.last_valid_index()
+        indx = data_frame.index[42]
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 2292.486)
 
@@ -40,7 +40,7 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 2862.475)
 
-        indx = data_frame.last_valid_index()
+        indx = data_frame.index[42]
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 23760.331)
 
@@ -57,7 +57,7 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 2862.475)
 
-        indx = data_frame.last_valid_index()
+        indx = data_frame.index[42]
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 23760.331)
 
@@ -81,7 +81,6 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting single series on different frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT', subject='BSCI', measure='blsa')
-        self.assertEqual(data_frame.shape[0], 390)
         self.assertEqual(data_frame.shape[1], 2)
 
         indx = data_frame.first_valid_index()
@@ -89,8 +88,7 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, -5.0)
 
-        indx = data_frame.last_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.get_value(datetime.datetime(2017, 5, 1), sname)
         self.assertEqual(value, 2.0)
 
         indx = data_frame.first_valid_index()
@@ -116,7 +114,6 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
-        self.assertEqual(data_frame.shape[0], 465)
         self.assertEqual(data_frame.shape[1], 3)
 
         sname = ('Austria', 'Confidence indicators', 'Balance, s.a.', 'M')
@@ -127,7 +124,6 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids with time range"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;BE', subject='BSCI', measure='blsa', frequency='Q;M', timerange='2010M1-2015M12')
-        self.assertEqual(data_frame.shape[0], 72)
         self.assertEqual(data_frame.shape[1], 3)
 
         sname = ('Austria', 'Confidence indicators', 'Balance, s.a.', 'M')
@@ -200,7 +196,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 7)
         self.assertEqual(data_frame.shape[1], 1)
 
-        sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows', 'Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
+        sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows - Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
 
         indx = data_frame.first_valid_index()
         value = data_frame.get_value(indx, sname)
@@ -292,7 +288,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 7)
         self.assertEqual(data_frame.shape[1], 1)
 
-        sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows', 'Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
+        sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows - Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
 
         indx = data_frame.first_valid_index()
         value = data_frame.get_value(indx, sname)
@@ -315,3 +311,88 @@ class TestKnoemaClient(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
         self.assertTrue("Dataset has not been verified, because of the following error(s): Requested dataset doesn't exist or you don't have access to it." in str(context.exception))
+
+    def test_include_metadata_true(self):
+        """The method is testing getting multiple series with data and metadata"""
+
+        data, metadata = knoema.get('IMFWEO2017Apr', True, country=['914','512'], subject='lp')
+        self.assertEqual(data.shape[0], 43)
+        self.assertEqual(data.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data.columns.names)
+        self.assertEqual(metadata.shape[0], 7)
+        self.assertEqual(metadata.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
+        indx = data.first_valid_index()
+        sname = ('Albania', 'Population (Persons)', 'A')
+        value = data.get_value(indx, sname)
+        self.assertEqual(value, 2.762)
+        
+        indx = metadata.first_valid_index()
+        value = metadata.get_value(indx, sname)
+        self.assertEqual(value, '914')
+
+        indx = data.last_valid_index()
+        value = data.get_value(indx, sname)
+        self.assertEqual(value, 2.858)
+
+    def test_get_data_from_dataset_with_multiword_dimnames_and_metadata(self):
+        """The method is testing load data from regular dataset with dimenions that have multi word names include metadata"""
+
+        data_frame, metadata = knoema.get('FDI_FLOW_CTRY', True,**{'Reporting country': 'AUS',
+                                                    'Partner country/territory': 'w0',
+                                                    'Measurement principle': 'DI',
+                                                    'Type of FDI': 'T_FA_F',
+                                                    'Type of entity': 'ALL',
+                                                    'Accounting entry': 'NET',
+                                                    'Level of counterpart': 'IMC',
+                                                    'Currency': 'USD'})
+
+        self.assertEqual(data_frame.shape[0], 7)
+        self.assertEqual(data_frame.shape[1], 1)
+
+        sname = ('Australia','WORLD','Directional principle: Inward','FDI financial flows - Total','All resident units','Net','Immediate counterpart (Immediate investor or immediate host)','US Dollar','A')
+
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 31666.667, 3)
+
+        indx = data_frame.last_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 22267.638, 3)   
+
+    def test_get_data_from_dataset_with_multiword_dimnames_and_metadata_and_mnemomics(self):
+        """The method is testing load data from regular dataset with dimenions that have multi word names include metadata and mnemonics"""
+
+        data_frame, metadata = knoema.get('xwfebbf', True,**{'Country': '1000000',
+                                                    'Indicator': '1000000',
+                                                    'Adjustment Type': '1000000',
+                                                    'Conversion Type': '1000000'})
+
+        self.assertEqual(data_frame.shape[0], 1)
+        self.assertEqual(data_frame.shape[1], 1)
+        self.assertEqual(metadata.shape[0], 7)
+        self.assertEqual(metadata.shape[1], 1)
+        self.assertEqual(['Country', 'Indicator', 'Adjustment Type','Conversion Type', 'Frequency'], data_frame.columns.names)
+        self.assertEqual(['Country', 'Indicator', 'Adjustment Type','Conversion Type', 'Frequency'], metadata.columns.names)
+
+        sname = ('China','GDP DEFLATOR (% CHANGE, AV)','Not seasonally adjusted', 'Average','A')
+
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 2.0)
+
+        indx = metadata.first_valid_index()
+        value = metadata.get_value(indx, sname)
+        self.assertAlmostEqual(value, 'CN')
+
+        self.assertAlmostEqual(metadata.get_value('Unit', sname), 'Unit')
+        self.assertAlmostEqual(metadata.get_value('Scale', sname), 1.0)
+        self.assertAlmostEqual(metadata.get_value('Mnemonics', sname), 'RRRRRRRRR')
+
+    def test_get_data_from_dataset_big_selection(self):
+        """The method is testing load data from regular dataset with big selection"""
+        
+        with self.assertRaises(ValueError) as context:
+            data = knoema.get('IMFWEO2017Apr', frequency='A', Country='512;914;612;614;311;213;911;193;122;912;313;419;513;316;913;124;339;638;514;218;963;616;223;516;918;748;618;624;522;622;156;626;628;228;924;233;632;636;634;238;662;960;423;935;128', Subject='NGDP_RPCH;NGDP_RPCHMK;NGDPD;NGDP;NGDP_R;NGDP_D;NGDP_FY;PPPGDP;PPPPC;PPPSH;NGDPDPC;NGDPPC;NGDPRPC;NGSD_NGDP;NID_NGDP;PPPEX;NGAP_NPGDP;PCPIPCH;PCPIEPCH;PCPI;PCPIE;FLIBOR3;FLIBOR6;TRADEPCH;TM_RPCH;TMG_RPCH;TX_RPCH;TXG_RPCH;TTPCH;TTTPCH;TXGM_D;TXGM_DPCH;LP;LE;LUR')
+        self.assertTrue("Underlying data is very large. Can't create visualization." in str(context.exception))   
+       

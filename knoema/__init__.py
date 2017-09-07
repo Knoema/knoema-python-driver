@@ -4,7 +4,7 @@ from knoema.api_config import ApiConfig
 from knoema.api_client import ApiClient
 from knoema.data_reader import DataReader
 
-def get(dataset, **dim_values):
+def get(dataset, IncludeMetadata = False, **dim_values):
     """Use this function to get data from Knoema dataset."""
 
     if not dataset:
@@ -17,7 +17,10 @@ def get(dataset, **dim_values):
     client = ApiClient(config.host, config.app_id, config.app_secret)
 
     dataset = client.get_dataset(dataset)
-    data_reader = DataReader(client, dataset, dim_values)
+    dimensions = []
+    for dim in dataset.dimensions:
+       dimensions.append(client.get_dimension(dataset.id, dim.id))
+    data_reader = DataReader(client, dataset, dimensions, dim_values, IncludeMetadata)
 
     return data_reader.get_pandasframe()
 

@@ -55,7 +55,7 @@ class DataReader(object):
                 time_range = value
                 continue
 
-            splited_values = value.split(';')
+            splited_values = value.split(';') if isinstance(value, str) else value
             if definition.isequal_strings_ignorecase(name, 'frequency'):
                 pivotreq.frequencies = splited_values
                 continue

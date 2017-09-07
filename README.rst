@@ -59,7 +59,7 @@ For multiple selection you can use the next examples::
     import knoema
     data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp')
 
-or
+or::
 
     import knoema
     data_frame = knoema.get('IMFWEO2017Apr', country=['914','512','111'], subject=['lp','ngdp'])
@@ -82,10 +82,10 @@ In addition to the required using of the selections for dimensions, you can addi
     import knoema
     data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp', frequency='A', timerange='2007-2017')
 
-******************
+******************************************************
 Retrieving series from datasets including metadata
-******************
-By default the function knoema.get returns the one dataframe with data. If you want also get information about metadata(attributes, unit, scale, mnemonics), include the additional parameter in your function, like this:
+******************************************************
+By default the function knoema.get returns the one dataframe with data. If you want also get information about metadata(attributes, unit, scale, mnemonics), include the additional parameter in your function, like this::
 
      import knoema
      data, metadata = knoema.get('IMFWEO2017Apr', True, country=['914','512'], subject='lp')

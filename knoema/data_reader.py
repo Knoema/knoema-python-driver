@@ -7,11 +7,11 @@ import knoema.api_definitions as definition
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""
 
-    def __init__(self, client, dataset, dimensions, dim_values, include_metadata):
+    def __init__(self, client, dataset, dim_values, include_metadata):
         self.client = client
         self.dataset = dataset
         self.dim_values = dim_values
-        self.dimensions = dimensions
+        self.dimensions = []
         self.include_metadata = include_metadata
 
     def _ensure_alldimenions_in_filter(self, filter_dims):
@@ -97,37 +97,31 @@ class DataReader(object):
 
     def _get_series_name_with_metadata(self, series_point):
         names = []
-        names_with_attr = []
         for dim in self.dimensions:
-            names.append(series_point[dim.id]) 
             for item in dim.items:
                 if item.name == series_point[dim.id]:
                     dim_attrs = item.fields
                     break
             for attr in dim.fields: 
                 if not attr['isSystemField']:
-                     names_with_attr.append(dim_attrs[attr['name']]) 
-        names_with_attr.append(series_point.get('Unit'))
-        names_with_attr.append(series_point.get('Scale'))
-        names_with_attr.append(series_point.get('Mnemonics'))
-        names.append(series_point.get('Frequency'))         
-        return tuple(names), tuple (names_with_attr)
+                     names.append(dim_attrs[attr['name']]) 
+        names.append(series_point.get('Unit'))
+        names.append(series_point.get('Scale'))
+        names.append(series_point.get('Mnemonics'))      
+        return tuple(names)
 
-    def _get_names_of_dimensions_for_dataframe_with_metadata(self):
+    def _get_names_of_attributes(self):
         names = []
-        names_with_attributes = []
         for dim in self.dimensions:
-            names.append(dim.name)
             for attr in dim.fields:
                 if not attr['isSystemField']:
-                    names_with_attributes.append(dim.name +' '+ attr['displayName'])
-        names_with_attributes.append('Unit')            
-        names_with_attributes.append('Scale') 
-        names_with_attributes.append('Mnemonics') 
-        names.append('Frequency')       
-        return names, names_with_attributes
+                    names.append(dim.name +' '+ attr['displayName'])
+        names.append('Unit')            
+        names.append('Scale') 
+        names.append('Mnemonics')    
+        return names
 
-    def _get_names_of_dimensions_for_dataframe(self):
+    def _get_names_of_dimensions(self):
         names = []
         for dim in self.dimensions:
             names.append(dim.name)
@@ -136,25 +130,15 @@ class DataReader(object):
 
     def _get_series_with_metadata(self, resp, names_of_attributes):
         series = {}
-        series_with_attr = {}
         for series_point in resp.tuples:
             val = series_point['Value']
             if val is None:
                 continue
-            series_name, serie_attrs = self._get_series_name_with_metadata(series_point)
-            if series_name not in series:
-                series[series_name] = KnoemaTimeSeries(series_name,[],[])
-                series_with_attr[series_name] = KnoemaTimeSeries(series_name, serie_attrs, names_of_attributes)
-
-            curr_date_val = series_point['Time']
-            try:
-                curr_date_val = datetime.strptime(series_point['Time'], '%Y-%m-%dT%H:%M:%SZ')
-            except ValueError:
-                pass
-
-            series[series_name].add_value(series_point['Value'], curr_date_val)
-
-        return series, series_with_attr
+            serie_name = self._get_series_name(series_point)
+            serie_attrs = self._get_series_name_with_metadata(series_point)
+            if serie_name not in series:
+                series[serie_name] = KnoemaTimeSeries(serie_name, serie_attrs, names_of_attributes)
+        return series
 
     def _get_series(self, resp):
         series = {}
@@ -178,43 +162,36 @@ class DataReader(object):
 
     def get_pandasframe(self):
         """The method loads data from dataset"""
-
+        for dim in self.dataset.dimensions:
+            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+            
         pivotreq = self._create_pivot_request()
         pitvotresp = self.client.get_data(pivotreq)
+        pandas_series = {}
 
+        # create dataframe with data
+        names_of_dimensions = self._get_names_of_dimensions()
+        series = self._get_series(pitvotresp)
+        for series_name, series_content in series.items():
+            pandas_series[series_name] = series_content.get_pandas_series()
+
+        pandas_data_frame = pandas.DataFrame(pandas_series)
+        pandas_data_frame.sort_index()
+        if isinstance(pandas_data_frame.columns, pandas.MultiIndex):
+            pandas_data_frame.columns.names = names_of_dimensions  
         if self.include_metadata:
-            names_of_dimensions, names_of_attributes = self._get_names_of_dimensions_for_dataframe_with_metadata()
-            series, series_with_attr = self._get_series_with_metadata(pitvotresp, names_of_attributes)
-            pandas_series = {}
+            # create dataframe with metadata
+            names_of_attributes = self._get_names_of_attributes()
+            series_with_attr = self._get_series_with_metadata(pitvotresp, names_of_attributes)
             pandas_series_with_attr = {}
-            for series_name, series_content in series.items():
-                pandas_series[series_name] = series_content.get_pandas_series()
             for series_name, series_content in series_with_attr.items():    
                 pandas_series_with_attr[series_name] = series_content.get_pandas_series()
-
-            pandas_data_frame = pandas.DataFrame(pandas_series)
-            pandas_data_frame.sort_index()
-            if isinstance(pandas_data_frame.columns, pandas.MultiIndex):
-                pandas_data_frame.columns.names = names_of_dimensions
-
             pandas_data_frame_with_attr = pandas.DataFrame(pandas_series_with_attr)
             pandas_data_frame_with_attr.sort_index()
             if isinstance(pandas_data_frame_with_attr.columns, pandas.MultiIndex):
-                pandas_data_frame_with_attr.columns.names = names_of_dimensions    
-                
-            return pandas_data_frame, pandas_data_frame_with_attr
-        else:
-            names_of_dimensions = self._get_names_of_dimensions_for_dataframe()
-            series = self._get_series(pitvotresp)
-            pandas_series = {}
-            for series_name, series_content in series.items():
-                pandas_series[series_name] = series_content.get_pandas_series()
-
-            pandas_data_frame = pandas.DataFrame(pandas_series)
-            pandas_data_frame.sort_index()
-            if isinstance(pandas_data_frame.columns, pandas.MultiIndex):
-                pandas_data_frame.columns.names = names_of_dimensions  
-            return pandas_data_frame   
+                pandas_data_frame_with_attr.columns.names = names_of_dimensions             
+            return pandas_data_frame, pandas_data_frame_with_attr    
+        return pandas_data_frame   
 
 
 class KnoemaTimeSeries(object):

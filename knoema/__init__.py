@@ -17,10 +17,7 @@ def get(dataset, IncludeMetadata = False, **dim_values):
     client = ApiClient(config.host, config.app_id, config.app_secret)
 
     dataset = client.get_dataset(dataset)
-    dimensions = []
-    for dim in dataset.dimensions:
-       dimensions.append(client.get_dimension(dataset.id, dim.id))
-    data_reader = DataReader(client, dataset, dimensions, dim_values, IncludeMetadata)
+    data_reader = DataReader(client, dataset, dim_values, IncludeMetadata)
 
     return data_reader.get_pandasframe()
 

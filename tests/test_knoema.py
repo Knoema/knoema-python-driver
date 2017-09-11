@@ -79,7 +79,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_singleseries_difffrequencies_by_member_id(self):
         """The method is testing getting single series on different frequencies by dimension member ids"""
-
+        
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT', subject='BSCI', measure='blsa')
         self.assertEqual(data_frame.shape[1], 2)
 
@@ -112,7 +112,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_multifrequency_by_member_id(self):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
-
+        
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
         self.assertEqual(data_frame.shape[1], 3)
 
@@ -148,7 +148,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_wrong_dimension(self):
         """The method is testing if there is wrong dimension name is specified"""
-
+        
         with self.assertRaises(ValueError) as context:
             knoema.get('IMFWEO2017Apr', indicator='LP;NGDP')
 
@@ -300,7 +300,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_delete_dataset_negative(self):
         """The method is negative test on dataset deletion"""
-
+           
         with self.assertRaises(urllib.error.HTTPError) as context:
             knoema.delete('non_existing_id')
         self.assertTrue('HTTP Error 400: Bad Request' in str(context.exception))
@@ -396,3 +396,70 @@ class TestKnoemaClient(unittest.TestCase):
             data = knoema.get('IMFWEO2017Apr', frequency='A', Country='512;914;612;614;311;213;911;193;122;912;313;419;513;316;913;124;339;638;514;218;963;616;223;516;918;748;618;624;522;622;156;626;628;228;924;233;632;636;634;238;662;960;423;935;128', Subject='NGDP_RPCH;NGDP_RPCHMK;NGDPD;NGDP;NGDP_R;NGDP_D;NGDP_FY;PPPGDP;PPPPC;PPPSH;NGDPDPC;NGDPPC;NGDPRPC;NGSD_NGDP;NID_NGDP;PPPEX;NGAP_NPGDP;PCPIPCH;PCPIEPCH;PCPI;PCPIE;FLIBOR3;FLIBOR6;TRADEPCH;TM_RPCH;TMG_RPCH;TX_RPCH;TXG_RPCH;TTPCH;TTTPCH;TXGM_D;TXGM_DPCH;LP;LE;LUR')
         self.assertTrue("Underlying data is very large. Can't create visualization." in str(context.exception))   
        
+    def test_get_data_from_flat_dataset_with_multi_measures_and_metadata(self):
+        """The method is testing load data from flat dataset with with mulitple measures and metadata"""
+        data_frame, metadata = knoema.get('bmlaaaf', True, **{'Country': 'Albania',
+                                              'Borrower': 'Ministry of Finance',
+                                              'Guarantor': 'Albania',
+                                              'Loan type': 'B loan',
+                                              'Loan status': 'EFFECTIVE',
+                                              'Currency of commitment': 'eur',
+                                              'measure': 'Interest rate'})
+
+        self.assertEqual(data_frame.shape[0], 1)
+        self.assertEqual(data_frame.shape[1], 1)
+        self.assertEqual(metadata.shape[0], 6)
+        self.assertEqual(metadata.shape[1], 1)
+
+        sname = ('Albania', 'Ministry of Finance', 'Albania', 'B LOAN', 'EFFECTIVE', 'EUR', 'Interest Rate', 'D')
+        value = data_frame.get_value('All time', sname)
+        self.assertEqual(value, 0.0)
+        self.assertEqual(metadata.get_value('Country Country Code',sname),'AL')
+        self.assertEqual(metadata.get_value('Scale',sname),1)
+        self.assertEqual(metadata.get_value('Unit',sname),'None')
+
+
+    def test_get_data_from_flat_dataset_without_time_and_with_metadata(self):
+        """The method is testing load data from flat dataset without time and with metadata"""
+        data_frame, metadata = knoema.get('pocqwkd',True, **{'Object type': 'Airports',
+                                              'Object name': 'Bakel airport'})
+
+        self.assertEqual(data_frame.shape[0], 1)
+        self.assertEqual(data_frame.shape[1], 1)
+        self.assertEqual(metadata.shape[0], 5)
+        self.assertEqual(metadata.shape[1], 1)
+
+        sname = ('Airports', 'Bakel Airport', 'D')
+        value = data_frame.get_value('All time', sname)
+        self.assertEqual(value, 1.0)   
+        self.assertEqual(metadata.get_value('Object Name Latitude',sname),'14.847256')
+        self.assertEqual(metadata.get_value('Object Name Longitude',sname),'-12.468264')
+
+        self.assertEqual(metadata.get_value('Scale',sname),1)
+        self.assertEqual(metadata.get_value('Unit',sname),'# of records')
+
+    def test_include_metadata_true_DELETE(self):
+        """The method is testing getting multiple series with data and metadata"""
+        apicfg = knoema.ApiConfig()
+        apicfg.host = 'knoema.com'
+        apicfg.app_id = 'bHcV5UkOVyKcBw'
+        apicfg.app_secret = "/0itYgLqnD0i49kmdBVSZ1qLjPU"
+        data, metadata = knoema.get('IMFWEO2017Apr', country=['914','512'], subject='lp')
+        self.assertEqual(data.shape[0], 43)
+        self.assertEqual(data.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data.columns.names)
+        self.assertEqual(metadata.shape[0], 7)
+        self.assertEqual(metadata.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
+        indx = data.first_valid_index()
+        sname = ('Albania', 'Population (Persons)', 'A')
+        value = data.get_value(indx, sname)
+        self.assertEqual(value, 2.762)
+        
+        indx = metadata.first_valid_index()
+        value = metadata.get_value(indx, sname)
+        self.assertEqual(value, '914')
+
+        indx = data.last_valid_index()
+        value = data.get_value(indx, sname)
+        self.assertEqual(value, 2.858)

@@ -3,6 +3,7 @@
 from datetime import datetime
 import pandas
 import knoema.api_definitions as definition
+from requests.structures import CaseInsensitiveDict
 
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""
@@ -100,7 +101,7 @@ class DataReader(object):
         for dim in self.dimensions:
             for item in dim.items:
                 if item.name == series_point[dim.id]:
-                    dim_attrs = item.fields
+                    dim_attrs = CaseInsensitiveDict(item.fields)
                     break
             for attr in dim.fields: 
                 if not attr['isSystemField']:
@@ -110,7 +111,7 @@ class DataReader(object):
         names.append(series_point.get('Mnemonics'))      
         return tuple(names)
 
-    def _get_names_of_attributes(self):
+    def _get_attribute_names(self):
         names = []
         for dim in self.dimensions:
             for attr in dim.fields:
@@ -121,14 +122,14 @@ class DataReader(object):
         names.append('Mnemonics')    
         return names
 
-    def _get_names_of_dimensions(self):
+    def _get_dimension_names(self):
         names = []
         for dim in self.dimensions:
             names.append(dim.name)
         names.append('Frequency')             
         return names
 
-    def _get_series_with_metadata(self, resp, names_of_attributes):
+    def _get_metadata_series(self, resp, names_of_attributes):
         series = {}
         for series_point in resp.tuples:
             val = series_point['Value']
@@ -137,10 +138,10 @@ class DataReader(object):
             serie_name = self._get_series_name(series_point)
             serie_attrs = self._get_series_name_with_metadata(series_point)
             if serie_name not in series:
-                series[serie_name] = KnoemaTimeSeries(serie_name, serie_attrs, names_of_attributes)
+                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
         return series
 
-    def _get_series(self, resp):
+    def _get_data_series(self, resp):
         series = {}
         for series_point in resp.tuples:
             val = series_point['Value']
@@ -148,7 +149,7 @@ class DataReader(object):
                 continue
             series_name = self._get_series_name(series_point)
             if series_name not in series:
-                series[series_name] = KnoemaTimeSeries(series_name,[],[])
+                series[series_name] = KnoemaSeries(series_name,[],[])
 
             curr_date_val = series_point['Time']
             try:
@@ -170,8 +171,8 @@ class DataReader(object):
         pandas_series = {}
 
         # create dataframe with data
-        names_of_dimensions = self._get_names_of_dimensions()
-        series = self._get_series(pitvotresp)
+        names_of_dimensions = self._get_dimension_names()
+        series = self._get_data_series(pitvotresp)
         for series_name, series_content in series.items():
             pandas_series[series_name] = series_content.get_pandas_series()
 
@@ -179,35 +180,37 @@ class DataReader(object):
         pandas_data_frame.sort_index()
         if isinstance(pandas_data_frame.columns, pandas.MultiIndex):
             pandas_data_frame.columns.names = names_of_dimensions  
-        if self.include_metadata:
-            # create dataframe with metadata
-            names_of_attributes = self._get_names_of_attributes()
-            series_with_attr = self._get_series_with_metadata(pitvotresp, names_of_attributes)
-            pandas_series_with_attr = {}
-            for series_name, series_content in series_with_attr.items():    
-                pandas_series_with_attr[series_name] = series_content.get_pandas_series()
-            pandas_data_frame_with_attr = pandas.DataFrame(pandas_series_with_attr)
-            pandas_data_frame_with_attr.sort_index()
-            if isinstance(pandas_data_frame_with_attr.columns, pandas.MultiIndex):
-                pandas_data_frame_with_attr.columns.names = names_of_dimensions             
-            return pandas_data_frame, pandas_data_frame_with_attr    
-        return pandas_data_frame   
+        if not self.include_metadata:
+            return pandas_data_frame
+        
+        # create dataframe with metadata
+        names_of_attributes = self._get_attribute_names()
+        series_with_attr = self._get_metadata_series(pitvotresp, names_of_attributes)
+        pandas_series_with_attr = {}
+        for series_name, series_content in series_with_attr.items():    
+            pandas_series_with_attr[series_name] = series_content.get_pandas_series()
+        pandas_data_frame_with_attr = pandas.DataFrame(pandas_series_with_attr)
+        pandas_data_frame_with_attr.sort_index()
+        if isinstance(pandas_data_frame_with_attr.columns, pandas.MultiIndex):
+            pandas_data_frame_with_attr.columns.names = names_of_dimensions             
+        return pandas_data_frame, pandas_data_frame_with_attr    
+         
 
 
-class KnoemaTimeSeries(object):
-    """This class combines values and date points for one time series"""
+class KnoemaSeries(object):
+    """This class combines values and index points for one time series"""
 
-    def __init__(self, name, values=[], dates=[]):
+    def __init__(self, name, values=[], index=[]):
         self.name = name
         self.values = values
-        self.dates = dates
+        self.index = index
 
-    def add_value(self, value, date_point):
-        """The function is addeing new value to provied date. If date does not exist"""
-        if date_point not in self.dates:
+    def add_value(self, value, index_point):
+        """The function is addeing new value to provied index. If index does not exist"""
+        if index_point not in self.index:
             self.values.append(value)
-            self.dates.append(date_point)
+            self.index.append(index_point)
 
     def get_pandas_series(self):
-        """The function creates pandas series based on dates and values"""
-        return pandas.Series(self.values, self.dates, name=self.name)
+        """The function creates pandas series based on index and values"""
+        return pandas.Series(self.values, self.index, name=self.name)

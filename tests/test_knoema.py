@@ -437,29 +437,3 @@ class TestKnoemaClient(unittest.TestCase):
 
         self.assertEqual(metadata.get_value('Scale',sname),1)
         self.assertEqual(metadata.get_value('Unit',sname),'# of records')
-
-    def test_include_metadata_true_DELETE(self):
-        """The method is testing getting multiple series with data and metadata"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = 'knoema.com'
-        apicfg.app_id = 'bHcV5UkOVyKcBw'
-        apicfg.app_secret = "/0itYgLqnD0i49kmdBVSZ1qLjPU"
-        data, metadata = knoema.get('IMFWEO2017Apr', country=['914','512'], subject='lp')
-        self.assertEqual(data.shape[0], 43)
-        self.assertEqual(data.shape[1], 2)
-        self.assertEqual(['Country', 'Subject', 'Frequency'], data.columns.names)
-        self.assertEqual(metadata.shape[0], 7)
-        self.assertEqual(metadata.shape[1], 2)
-        self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
-        indx = data.first_valid_index()
-        sname = ('Albania', 'Population (Persons)', 'A')
-        value = data.get_value(indx, sname)
-        self.assertEqual(value, 2.762)
-        
-        indx = metadata.first_valid_index()
-        value = metadata.get_value(indx, sname)
-        self.assertEqual(value, '914')
-
-        indx = data.last_valid_index()
-        value = data.get_value(indx, sname)
-        self.assertEqual(value, 2.858)

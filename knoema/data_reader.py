@@ -3,7 +3,6 @@
 from datetime import datetime
 import pandas
 import knoema.api_definitions as definition
-from requests.structures import CaseInsensitiveDict
 
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""
@@ -101,11 +100,13 @@ class DataReader(object):
         for dim in self.dimensions:
             for item in dim.items:
                 if item.name == series_point[dim.id]:
-                    dim_attrs = CaseInsensitiveDict(item.fields)
+                    dim_attrs = item.fields
                     break
             for attr in dim.fields: 
-                if not attr['isSystemField']:
-                     names.append(dim_attrs[attr['name']]) 
+                if not attr['isSystemField']: 
+                    for key, value in dim_attrs.items(): 
+                        if definition.isequal_strings_ignorecase(key, attr['name']):
+                            names.append(value)
         names.append(series_point.get('Unit'))
         names.append(series_point.get('Scale'))
         names.append(series_point.get('Mnemonics'))      

@@ -137,8 +137,8 @@ class DataReader(object):
             if val is None:
                 continue
             serie_name = self._get_series_name(series_point)
-            serie_attrs = self._get_series_name_with_metadata(series_point)
             if serie_name not in series:
+                serie_attrs = self._get_series_name_with_metadata(series_point)
                 series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
         return series
 

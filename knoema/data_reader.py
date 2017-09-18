@@ -110,9 +110,8 @@ class DataReader(object):
         names.append(series_point.get('Unit'))
         names.append(series_point.get('Scale'))
         names.append(series_point.get('Mnemonics'))
-        if not self.dataset.timeseriesAttribues is None:
-            for attr in self.dataset.timeseriesAttribues:
-                names.append(series_point.get(attr.name))             
+        for attr in self.dataset.timeseries_attributes:
+            names.append(series_point.get(attr.name))             
         return tuple(names)
 
     def _get_attribute_names(self):
@@ -124,9 +123,8 @@ class DataReader(object):
         names.append('Unit')            
         names.append('Scale') 
         names.append('Mnemonics')
-        if not self.dataset.timeseriesAttribues is None:
-            for attr in self.dataset.timeseriesAttribues:
-                names.append(attr.name)     
+        for attr in self.dataset.timeseries_attributes:
+            names.append(attr.name)     
         return names
 
     def _get_dimension_names(self):

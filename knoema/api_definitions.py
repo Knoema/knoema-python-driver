@@ -69,6 +69,12 @@ class DateRange(object):
         self.end_date = datetime.strptime(data['endDate'], '%Y-%m-%dT%H:%M:%SZ')
         self.frequencies = data['frequencies']
 
+class TimeSeriesAttribute(object):
+    """This class contains information about dataset' s timeseries attributes"""
+    def __init__(self, data):
+        self.name = data['name']
+        self.type = data['type']
+        self.allowedValues = data['allowedValues']
 
 class Dataset(object):
     """The class contains dataset description"""
@@ -81,7 +87,11 @@ class Dataset(object):
 
         self.id = data['id']
         self.dimensions = [DimensionModel(dim) for dim in data['dimensions']]
-
+        if 'timeseriesAttributes' in data:
+            self.timeseriesAttribues = [TimeSeriesAttribute(attr) for attr in data['timeseriesAttributes']]
+        else:
+            self.timeseriesAttribues = None
+            
     def find_dimension_by_name(self, dim_name):
         """the method searching dimension with a given name"""
 

@@ -438,6 +438,15 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.get_value('Scale',sname),1)
         self.assertEqual(metadata.get_value('Unit',sname),'# of records')
 
+    def test_weekly_frequency(self):
+        """The method is testing load data from regular dataset by weekly frequency"""
+        data = knoema.get('WOERDP2015', location='China', Indicator='EMBI Sovereign Spreads (Basis points)', frequency='W')
+        sname = ('China', 'EMBI Sovereign Spreads (Basis points)', 'W')
+        value = data.get_value(datetime.datetime(2010, 1, 4), sname)
+        self.assertEqual(value, 44)
+        value = data.get_value(datetime.datetime(2015, 9, 7), sname)
+        self.assertEqual(value, 183)
+
     def test_incorrect_host_knoema_get(self):
         """The method is negative test on get series from dataset with incorrect host"""
         with self.assertRaises(ValueError) as context:

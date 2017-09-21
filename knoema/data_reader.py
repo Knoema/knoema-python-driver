@@ -1,6 +1,6 @@
 """This module contains data definitions for Knoema client"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas
 import knoema.api_definitions as definition
 
@@ -162,6 +162,8 @@ class DataReader(object):
             except ValueError:
                 pass
 
+            if (series_point['Frequency'] == "W"):
+                curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
             series[series_name].add_value(series_point['Value'], curr_date_val)
 
         return series

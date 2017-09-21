@@ -437,3 +437,27 @@ class TestKnoemaClient(unittest.TestCase):
 
         self.assertEqual(metadata.get_value('Scale',sname),1)
         self.assertEqual(metadata.get_value('Unit',sname),'# of records')
+
+    def test_incorrect_host_knoema_get(self):
+        """The method is negative test on get series from dataset with incorrect host"""
+        with self.assertRaises(ValueError) as context:
+            apicfg = knoema.ApiConfig()
+            apicfg.host = 'knoema_incorect.com'
+            data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
+        self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))
+
+    def test_incorrect_host_delete_dataset(self):
+        """The method is negative test on delete dataset with incorrect host"""
+        with self.assertRaises(ValueError) as context:
+            apicfg = knoema.ApiConfig()
+            apicfg.host = 'knoema_incorect.com'
+            knoema.delete('dataset')
+        self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))
+
+    def test_incorrect_host_verify_dataset(self):
+        """The method is negative test on verify dataset with incorrect host"""
+        with self.assertRaises(ValueError) as context:
+            apicfg = knoema.ApiConfig()
+            apicfg.host = 'knoema_incorect.com'
+            knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
+        self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))     

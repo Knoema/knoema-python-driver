@@ -139,3 +139,82 @@ if you have access rights, use the next code::
 where:
 
 * 'dataset_id' - the string variable which should provide id of the dataset that is going to be deleted
+
+*******************************************************
+Possible errors in Knoema package and how to avoid them
+*******************************************************
+1. "ValueError: Dataset id is not specified"
+This error can be when you use None instead dataset's Id.
+Bad example::
+
+    knoema.get(None)
+
+2. "ValueError:  Dimensions members are not specified"
+This error can be when you don't set selection.
+Bad examples::
+
+    knoema.get('IMFWEO2017Apr')
+    knoema.get('IMFWEO2017Apr',123)
+    knoema.get('IMFWEO2017Apr',"string")
+    knoema.get('IMFWEO2017Apr',True)
+    knoema.get('IMFWEO2017Apr',**{})
+
+3. "ValueError: Dimension with id or name some_name_of_dimension is not found"
+This error can be when you use nonexistent dimension's name or id.
+Bad examples::
+
+    knoema.get('IMFWEO2017Apr', dimension_not_exist='914', subject='lp')
+    knoema.get('IMFWEO2017Apr', **{'dimension not exist':'914', 'subject':'lp'})
+
+4."ValueError:  The following dimension(s) are not set: list of dimensions name"
+This error can be when you don't set some dimensions.
+Bad examples::
+
+    knoema.get('IMFWEO2017Apr', subject='lp')
+    knoema.get('IMFWEO2017Apr', **{'country':'914'})
+
+5. "ValueError: Selection for dimension dimension_name is empty"
+This error can be when you use empty selection for dimension or all specified elements don't exist.
+Bad examples::
+
+    knoema.get('IMFWEO2017Apr', country ='', subject='lp')
+    knoema.get('IMFWEO2017Apr', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
+
+6. "ValueError: Requested dataset doesn't exist or you don't have access to it"
+This error can be when you try to use nonexistent or private dataset.
+Bad example::
+
+    knoema.get('IMFWEO2017Apr1', **{'country':'914', 'subject':'lp;ngdp'})
+
+This dataset doesn't exist. If your dataset exist, and you have access to it, check that you set api_config with app_id and app_secret.
+
+7. "ValueError: "Underlying data is very large. Can't create visualization"
+This error can be when you use a big selection. Try to decrease the selection.
+
+8. "The specified host incorect_host does not exist"
+This error can be when you use nonexistent host in api_config.
+Bad example::
+
+    apicfg = knoema.ApiConfig()
+    apicfg.host = 'knoema_incorect.com'
+    data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
+
+9. "HTTPError:  HTTP Error 400: Bad Request"
+This error can be when you try to delete nonexistent dataset or if you don't have access to delete it.
+Bad example::
+
+    knoema.delete('nonexistent_dataset')
+
+If you have access to it, check that you set api_config with app_id and app_secret.
+
+10. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 50"
+This error can be when you use public user (without api_config with app_id and app_secret) and reaching the limit of requests.
+You can avoid this error, if will use api_config with app_id and app_secret.
+
+11. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 500"
+This error can be when you use api_config with app_id and app_secret, and reaching the limit of requests.
+You can avoid this error, if will use other parameters app_id and app_secret.
+
+12. "HTTPError: HTTP Error 403: invalid REST authentication credentials"
+This error can be when you try to use api_config with app_id and app_secret, but they are incorrect. 
+You can avoid this error, if will use other parameters app_id and app_secret.

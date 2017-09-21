@@ -34,6 +34,7 @@ def delete(dataset):
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
     client.delete(dataset)
+    return ('Dataset {} has been deleted successfully'.format(dataset))
 
 def verify(dataset, publication_date, source, refernce_url):
     """Use this function to verify a dataset."""

@@ -68,10 +68,7 @@ class ApiClient:
 
         headers = self._get_request_headers()
         req = urllib.request.Request(url, headers=headers)
-        try:
-            resp = urllib.request.urlopen(req)
-        except:
-            raise ValueError('The specified host {} does not exist'.format(self._host))
+        resp = urllib.request.urlopen(req)
         return obj(_response_to_json(resp))
 
     def _api_post(self, responseobj, apipath, requestobj):
@@ -83,12 +80,19 @@ class ApiClient:
 
         headers = self._get_request_headers()
         req = urllib.request.Request(url, binary_data, headers)
+        resp = urllib.request.urlopen(req)
+        return responseobj(_response_to_json(resp))
+
+    def check_correct_host(self):
+        """The method checks whether the host is correctly set and whether it can configure the connection to this host. Does not check the base host knoema.com """
+        if self._host == 'knoema.com':
+            return
+        url = self._get_url('')
+        req = urllib.request.Request(url)
         try:
             resp = urllib.request.urlopen(req)
         except:
-            raise ValueError('The specified host {} does not exist'.format(self._host))
-
-        return responseobj(_response_to_json(resp))
+            raise ValueError('The specified host {} does not exist'.format(self._host))  
 
     def get_dataset(self, datasetid):
         """The method is getting information about dataset byt it's id"""
@@ -126,10 +130,7 @@ class ApiClient:
         req = urllib.request.Request(url, binary_data, headers)
         req.add_header('Content-type', fcontent.get_content_type())
         req.add_header('Content-length', len(binary_data))
-        try:
-            resp = urllib.request.urlopen(req)
-        except:
-            raise ValueError('The specified host {} does not exist'.format(self._host))      
+        resp = urllib.request.urlopen(req)   
 
         return definition.UploadPostResponse(_response_to_json(resp))
 
@@ -205,10 +206,7 @@ class ApiClient:
 
         headers = self._get_request_headers()
         req = urllib.request.Request(url, binary_data, headers)
-        try:
-            resp = urllib.request.urlopen(req)
-        except:
-            raise ValueError('The specified host {} does not exist'.format(self._host))      
+        resp = urllib.request.urlopen(req)   
         str_response = resp.read().decode('utf-8')
         if str_response != '"successful"' or resp.status < 200 or resp.status >= 300:
             msg = 'Dataset has not been deleted, because of the following error(s): {}'.format(str_response)

@@ -15,7 +15,7 @@ def get(dataset, IncludeMetadata = False, **dim_values):
 
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
-
+    client.check_correct_host()
     dataset = client.get_dataset(dataset)
     data_reader = DataReader(client, dataset, dim_values, IncludeMetadata)
 
@@ -33,6 +33,7 @@ def delete(dataset):
     
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
+    client.check_correct_host()
     client.delete(dataset)
     return ('Dataset {} has been deleted successfully'.format(dataset))
 
@@ -41,4 +42,5 @@ def verify(dataset, publication_date, source, refernce_url):
 
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
+    client.check_correct_host()
     client.verify(dataset, publication_date, source, refernce_url)

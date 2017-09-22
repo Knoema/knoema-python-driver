@@ -145,13 +145,13 @@ Possible errors in Knoema package and how to avoid them
 *******************************************************
 1. "ValueError: Dataset id is not specified"
 This error can be when you use None instead dataset's Id.
-Bad example::
+Example::
 
     knoema.get(None)
 
 2. "ValueError:  Dimensions members are not specified"
 This error can be when you don't set selection.
-Bad examples::
+Examples::
 
     knoema.get('IMFWEO2017Apr')
     knoema.get('IMFWEO2017Apr',123)
@@ -161,28 +161,28 @@ Bad examples::
 
 3. "ValueError: Dimension with id or name some_name_of_dimension is not found"
 This error can be when you use nonexistent dimension's name or id.
-Bad examples::
+Examples::
 
     knoema.get('IMFWEO2017Apr', dimension_not_exist='914', subject='lp')
     knoema.get('IMFWEO2017Apr', **{'dimension not exist':'914', 'subject':'lp'})
 
 4."ValueError:  The following dimension(s) are not set: list of dimensions name"
 This error can be when you don't set some dimensions.
-Bad examples::
+Examples::
 
     knoema.get('IMFWEO2017Apr', subject='lp')
     knoema.get('IMFWEO2017Apr', **{'country':'914'})
 
 5. "ValueError: Selection for dimension dimension_name is empty"
 This error can be when you use empty selection for dimension or all specified elements don't exist.
-Bad examples::
+Examples::
 
     knoema.get('IMFWEO2017Apr', country ='', subject='lp')
     knoema.get('IMFWEO2017Apr', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
 
 6. "ValueError: Requested dataset doesn't exist or you don't have access to it"
 This error can be when you try to use nonexistent or private dataset.
-Bad example::
+Example::
 
     knoema.get('IMFWEO2017Apr1', **{'country':'914', 'subject':'lp;ngdp'})
 
@@ -193,7 +193,7 @@ This error can be when you use a big selection. Try to decrease the selection.
 
 8. "The specified host incorect_host does not exist"
 This error can be when you use nonexistent host in api_config.
-Bad example::
+Example::
 
     apicfg = knoema.ApiConfig()
     apicfg.host = 'knoema_incorect.com'
@@ -201,7 +201,7 @@ Bad example::
 
 9. "HTTPError:  HTTP Error 400: Bad Request"
 This error can be when you try to delete nonexistent dataset or if you don't have access to delete it.
-Bad example::
+Example::
 
     knoema.delete('nonexistent_dataset')
 
@@ -209,12 +209,23 @@ If you have access to it, check that you set api_config with app_id and app_secr
 
 10. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 50"
 This error can be when you use public user (without api_config with app_id and app_secret) and reaching the limit of requests.
-You can avoid this error, if will use api_config with app_id and app_secret.
+You can avoid this error, using use api_config with app_id and app_secret.
 
 11. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 500"
 This error can be when you use api_config with app_id and app_secret, and reaching the limit of requests.
-You can avoid this error, if will use other parameters app_id and app_secret.
+You can avoid this error, using use other parameters app_id and app_secret.
 
 12. "HTTPError: HTTP Error 403: invalid REST authentication credentials"
 This error can be when you try to use api_config with app_id and app_secret, but they are incorrect. 
-You can avoid this error, if will use other parameters app_id and app_secret.
+You can avoid this error, using other parameters app_id and app_secret.
+
+13. "AttributeError: 'str' object has no attribute 'strftime'"
+This error can be when you use string data instead datetime.
+Example::
+
+    knoema.verify('IMFWEO2017Apr','2017-5-7','IMF','http://knoema.com')
+
+You can avoid this error using datetime instead string date.
+Example::
+
+    knoema.verify('IMFWEO2017Apr',datetime(2017,5,7),'IMF','http://knoema.com')  

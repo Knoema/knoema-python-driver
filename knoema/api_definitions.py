@@ -234,7 +234,9 @@ class DatasetUpload(object):
         self.flat_ds_update_options = verify_result.flat_ds_update_options
 
         dataset_details = verify_result.metadata_details
-        self.name = dataset_details.dataset_name if dataset_details and dataset_details.dataset_name else 'New dataset'
+        self.name = dataset_details.dataset_name if dataset_details and dataset_details.dataset_name else None
+        if self.name is None and dataset is None:
+            self.name = 'New dataset'
         self.description = dataset_details.description if dataset_details else None
         self.source = dataset_details.source if dataset_details else None
         self.publication_date = dataset_details.publication_date if dataset_details else None

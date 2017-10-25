@@ -52,7 +52,9 @@ where:
 
 This example finds all data points for the dataset IMFWEO2017Apr with selection by country = *Albania* and subject =  *Gross domestic product, current prices (U.S. dollars)* and stores this series in a pandas dataframe. You can then view the dataframe with operations *data_frame.head()* or *print(date_frame)*
 
-Please note that you need to identify all dimensions of the dataset, and for each dimension to indicate the selection. Otherwise, the method returns an error.
+If some dimension is not specified, the method will consider all the elements in this dimension. Example::
+
+    data_frame = knoema.get('IMFWEO2017Apr', subject = 'flibor6')
 
 For multiple selection you can use the next examples::
   
@@ -140,6 +142,16 @@ where:
 
 * 'dataset_id' - the string variable which should provide id of the dataset that is going to be deleted
 
+**********************
+Searching by mnemonics
+**********************
+The search by mnemonics implemented in knoema. Mnemonics is a unique identifier of the series. Different datasets can have the same series with the same mnemonics. In this case, in the search results there will be a series that was updated last. The same series can have several mnemonics at once, and you can search for any of them. 
+An example of using the search for mnemonics::
+
+    data_frame = knoema.get('dataset_id', mnemonics = 'mnemonic1;mnemonic2')
+    data_frame, metadata = knoema.get('dataset_id',True, mnemonics = ['mnemonic1','mnemonic2'])
+
+
 *******************************************************
 Possible errors in Knoema package and how to avoid them
 *******************************************************
@@ -169,15 +181,7 @@ Examples::
     knoema.get('IMFWEO2017Apr', dimension_not_exist='914', subject='lp')
     knoema.get('IMFWEO2017Apr', **{'dimension not exist':'914', 'subject':'lp'})
 
-4."ValueError:  The following dimension(s) are not set: list of dimensions name"
-
-This error appears when you don't set some dimensions.
-Examples::
-
-    knoema.get('IMFWEO2017Apr', subject='lp')
-    knoema.get('IMFWEO2017Apr', **{'country':'914'})
-
-5. "ValueError: Selection for dimension dimension_name is empty"
+4. "ValueError: Selection for dimension dimension_name is empty"
 
 This error appears when you use empty selection for dimension or all specified elements don't exist.
 Examples::
@@ -185,7 +189,7 @@ Examples::
     knoema.get('IMFWEO2017Apr', country ='', subject='lp')
     knoema.get('IMFWEO2017Apr', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
 
-6. "ValueError: Requested dataset doesn't exist or you don't have access to it"
+5. "ValueError: Requested dataset doesn't exist or you don't have access to it"
 
 This error appears when you use dataset that doesn't exist or you don't have access rights to it.
 Example::
@@ -194,11 +198,11 @@ Example::
 
 This dataset doesn't exist. If your dataset exist, and you have access to it, check that you set api_config with app_id and app_secret.
 
-7. "ValueError: "Underlying data is very large. Can't create visualization"
+6. "ValueError: "Underlying data is very large. Can't create visualization"
 
 This error appears when you use a big selection. Try to decrease the selection.
 
-8. "The specified host incorect_host doesn't exist"
+7. "The specified host incorect_host doesn't exist"
 
 This error appears when you use host that doesn't exist.
 Example::
@@ -207,7 +211,7 @@ Example::
     apicfg.host = 'knoema_incorect.com'
     data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
 
-9. "HTTPError:  HTTP Error 400: Bad Request"
+8. "HTTPError:  HTTP Error 400: Bad Request"
 
 This error appears when you try to delete dataset that doesn't exist or you don't have access rights to it.
 Example::
@@ -216,22 +220,22 @@ Example::
 
 If you have access to it, check that you set api_config with app_id and app_secret.
 
-10. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 50"
+9. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 50"
 
 This error appears when you use public user (api_config without app_id and app_secret parameters set) and reached the limit of requests.
 You can avoid this error, using api_config with app_id and app_secret.
 
-11. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 500"
+10. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 500"
 
 This error appears when you use api_config with app_id and app_secret parameters set, and reached the limit of requests.
 You can avoid this error, using other parameters app_id and app_secret.
 
-12. "HTTPError: HTTP Error 403: invalid REST authentication credentials"
+11. "HTTPError: HTTP Error 403: invalid REST authentication credentials"
 
 This error appears when you try to use api_config with app_id and app_secret, but they are incorrect. 
 You can avoid this error, using other parameters app_id and app_secret.
 
-13. "AttributeError: 'str' object has no attribute 'strftime'"
+12. "AttributeError: 'str' object has no attribute 'strftime'"
 
 This error appears when you use string data instead datetime.
 Example::

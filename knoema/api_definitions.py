@@ -177,6 +177,12 @@ class PivotResponse(object):
 
         self.tuples = data['data']
 
+class MnemonicsResponse(object):
+
+    def __init__(self,data):
+        self.items = []
+        for item in data:
+            self.items.append(PivotResponse(item['pivot']))
 
 class FileProperties(object):
     """The class contains response from upload post request"""

@@ -245,18 +245,6 @@ class TestKnoemaClient(unittest.TestCase):
 
         self.assertTrue("Requested dataset doesn't exist or you don't have access to it." in str(context.exception))
 
-    def test_not_all_dims_in_filter(self):
-        """The method is testing if dataset id set up incorrectly"""
-
-        with self.assertRaises(ValueError) as context:
-            knoema.get('bmlaaaf', **{'Country': 'Albania',
-                                     'Borrower': 'Ministry of Finance',
-                                     'Guarantor': 'Albania',
-                                     'Loan type': 'B loan',
-                                     'Loan status': 'EFFECTIVE'})
-
-        self.assertTrue('The following dimension(s) are not set: Currency of Commitment, Measure' in str(context.exception))
-
     def test_getdata_multiseries_by_member_key(self):
         """The method is testing getting multiple series by dimension member keys"""
 
@@ -469,4 +457,38 @@ class TestKnoemaClient(unittest.TestCase):
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
             knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
-        self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))     
+        self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))    
+
+
+    def test_get_data_with_partial_selection(self):
+        """The method is testing getting series with partial selection"""
+        apicfg = knoema.ApiConfig()
+        apicfg.app_id = 'bHcV5UkOVyKcBw'
+        apicfg.app_secret = '/0itYgLqnD0i49kmdBVSZ1qLjPU'
+        data_frame = knoema.get('IMFWEO2017Apr', subject = 'flibor6')
+
+        self.assertEqual(data_frame.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
+
+        indx = data_frame.first_valid_index()
+        sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 10.861)
+
+        indx = data_frame.index[38]
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 0.048)
+
+    def test_get_data_with_partial_selection_with_metadata(self):
+        """The method is testing getting series with partial selection"""
+        apicfg = knoema.ApiConfig()
+        apicfg.app_id = 'bHcV5UkOVyKcBw'
+        apicfg.app_secret = '/0itYgLqnD0i49kmdBVSZ1qLjPU'
+        data_frame, metadata = knoema.get('IMFWEO2017Apr', True, subject = 'flibor6')
+
+        self.assertEqual(metadata.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
+        sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')
+        self.assertEqual(metadata.get_value('Country Id',sname),'158')
+        self.assertEqual(metadata.get_value('Subject Id',sname),'FLIBOR6')
+        self.assertEqual(metadata.get_value('Unit',sname),'Percent')

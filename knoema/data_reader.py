@@ -14,11 +14,6 @@ class DataReader(object):
         self.dimensions = []
         self.include_metadata = include_metadata
 
-    def _ensure_alldimenions_in_filter(self, filter_dims):
-        out_of_filter_dim_names = [dim.name for dim in self.dataset.dimensions if dim not in filter_dims]
-        if out_of_filter_dim_names:
-            raise ValueError('The following dimension(s) are not set: {}'.format(', '.join(out_of_filter_dim_names)))
-
     def _get_dim_members(self, dim, splited_values):
 
         members = []
@@ -79,7 +74,7 @@ class DataReader(object):
 
             pivotreq.stub.append(definition.PivotItem(dim.id, members))
 
-        self._ensure_alldimenions_in_filter(filter_dims)
+        self.add_full_selection_by_empty_dim_values(filter_dims, pivotreq)
 
         if time_range:
             pivotreq.header.append(definition.PivotTimeItem('Time', [time_range], 'range'))
@@ -88,11 +83,16 @@ class DataReader(object):
 
         return pivotreq
 
+    def add_full_selection_by_empty_dim_values(self, filter_dims, pivotreq):
+        out_of_filter_dim_id = [dim.id for dim in self.dataset.dimensions if dim not in filter_dims]
+        for id in out_of_filter_dim_id:
+            pivotreq.stub.append(definition.PivotItem(id, []))
+
     def _get_series_name(self, series_point):
         names = []
         for dim in self.dimensions:
-            names.append(series_point[dim.id]) 
-        names.append(series_point['Frequency'])               
+            names.append(series_point[dim.id])
+        names.append(series_point['Frequency'])             
         return tuple(names)  
 
     def _get_series_name_with_metadata(self, series_point):
@@ -148,7 +148,7 @@ class DataReader(object):
 
     def _get_data_series(self, resp):
         series = {}
-        for series_point in resp.tuples:
+        for series_point in resp.tuples:  
             val = series_point['Value']
             if val is None:
                 continue
@@ -168,41 +168,67 @@ class DataReader(object):
 
         return series
 
-    def get_pandasframe(self):
-        """The method loads data from dataset"""
-        for dim in self.dataset.dimensions:
-            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
-            
-        pivotreq = self._create_pivot_request()
-        pitvotresp = self.client.get_data(pivotreq)
-        pandas_series = {}
-
-        # create dataframe with data
-        names_of_dimensions = self._get_dimension_names()
-        series = self._get_data_series(pitvotresp)
+    def creates_pandas_series(self, series, pandas_series):
         for series_name, series_content in series.items():
             pandas_series[series_name] = series_content.get_pandas_series()
+        return pandas_series
 
+    def create_pandas_dataframe(self, pandas_series, names_of_dimensions):
         pandas_data_frame = pandas.DataFrame(pandas_series)
         pandas_data_frame.sort_index()
         if isinstance(pandas_data_frame.columns, pandas.MultiIndex):
-            pandas_data_frame.columns.names = names_of_dimensions  
+            pandas_data_frame.columns.names = names_of_dimensions
+        return pandas_data_frame
+
+
+    def get_pandasframe(self):
+        """The method loads data from dataset"""
+        for dim in self.dataset.dimensions:
+                self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+        pandas_series = {}
+        names_of_dimensions = self._get_dimension_names()
+        if self.include_metadata:
+            pandas_series_with_attr = {}
+            names_of_attributes = self._get_attribute_names()
+
+        # the case for search by mnemonics
+        if len(self.dim_values) == 1 and 'mnemonics' in self.dim_values:
+            mnemonics = self.dim_values['mnemonics']
+            mnemonics_string = ';'.join(mnemonics) if isinstance(mnemonics, list) else mnemonics
+            mnemonicsresp = self.client.get_mnemonics(mnemonics_string)          
+            
+            for pivotresp in mnemonicsresp.items:
+                if not definition.isequal_strings_ignorecase(self.dataset.id, pivotresp.dataset):
+                    continue
+                # create dataframe with data for mnemonics
+                series = self._get_data_series(pivotresp)
+                pandas_series = self.creates_pandas_series(series, pandas_series)
+                if self.include_metadata:
+                    # create dataframe with metadata for mnemonics
+                    series_with_attr = self._get_metadata_series(pivotresp, names_of_attributes)
+                    pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)     
+
+            pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
+            if not self.include_metadata:
+                return pandas_data_frame
+            pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+            return pandas_data_frame, pandas_data_frame_with_attr
+
+        # the case of obtaining series by the selection 
+        pivotreq = self._create_pivot_request()
+        pivotresp = self.client.get_data(pivotreq)
+        # create dataframe with data
+        series = self._get_data_series(pivotresp)
+        pandas_series = self.creates_pandas_series(series, pandas_series)
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
         if not self.include_metadata:
             return pandas_data_frame
-        
+            
         # create dataframe with metadata
-        names_of_attributes = self._get_attribute_names()
-        series_with_attr = self._get_metadata_series(pitvotresp, names_of_attributes)
-        pandas_series_with_attr = {}
-        for series_name, series_content in series_with_attr.items():    
-            pandas_series_with_attr[series_name] = series_content.get_pandas_series()
-        pandas_data_frame_with_attr = pandas.DataFrame(pandas_series_with_attr)
-        pandas_data_frame_with_attr.sort_index()
-        if isinstance(pandas_data_frame_with_attr.columns, pandas.MultiIndex):
-            pandas_data_frame_with_attr.columns.names = names_of_dimensions             
-        return pandas_data_frame, pandas_data_frame_with_attr    
-         
-
+        series_with_attr = self._get_metadata_series(pivotresp, names_of_attributes)
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        return pandas_data_frame, pandas_data_frame_with_attr   
 
 class KnoemaSeries(object):
     """This class combines values and index points for one time series"""

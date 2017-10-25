@@ -118,6 +118,11 @@ class ApiClient:
         path = '/api/1.0/data/pivot/'
         return self._api_post(definition.PivotResponse, path, pivotrequest)
 
+    def get_mnemonics (self, mnemonics):
+        """The method get series by mnemonics"""
+        path = '/api/1.0/data/mnemonics?mnemonics={0}'
+        return self._api_get(definition.MnemonicsResponse, path.format(mnemonics))
+
     def upload_file(self, file):
         """The method is posting file to the remote server"""
 

@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 
-def isequal_strings_ignorecase(first, second):
+def is_equal_strings_ignore_case(first, second):
     """The function compares strings ignoring case"""
     if first and second:
         return first.upper() == second.upper()
@@ -39,24 +39,24 @@ class Dimension(DimensionModel):
         self.fields = data ['fields']
         self.items = [DimensionMember(item) for item in data['items']]
         
-    def findmember_by_key(self, member_key):
+    def find_member_by_key(self, member_key):
         """The method searches member of dimension by given member key"""
         for item in self.items:
             if item.key == member_key:
                 return item
         return None
 
-    def findmember_by_id(self, member_id):
+    def find_member_by_id(self, member_id):
         """The method searches member of dimension by given member id"""
         for item in self.items:
-            if 'id' in item.fields and isequal_strings_ignorecase(item.fields['id'], member_id):
+            if 'id' in item.fields and is_equal_strings_ignore_case(item.fields['id'], member_id):
                 return item
         return None
 
-    def findmember_by_name(self, member_name):
+    def find_member_by_name(self, member_name):
         """The method searches member of dimension by given member name"""
         for item in self.items:
-            if isequal_strings_ignorecase(item.name, member_name):
+            if is_equal_strings_ignore_case(item.name, member_name):
                 return item
         return None
 
@@ -93,7 +93,7 @@ class Dataset(object):
         """the method searching dimension with a given name"""
 
         for dim in self.dimensions:
-            if isequal_strings_ignorecase(dim.name, dim_name):
+            if is_equal_strings_ignore_case(dim.name, dim_name):
                 return dim
         return None
 
@@ -101,7 +101,7 @@ class Dataset(object):
         """the method searching dimension with a given id"""
 
         for dim in self.dimensions:
-            if isequal_strings_ignorecase(dim.id, dim_id):
+            if is_equal_strings_ignore_case(dim.id, dim_id):
                 return dim
         return None
 

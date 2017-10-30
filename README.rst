@@ -145,7 +145,7 @@ where:
 **********************
 Searching by mnemonics
 **********************
-The search by mnemonics implemented in knoema. Mnemonics is a unique identifier of the series. Different datasets can have the same series with the same mnemonics. In this case, in the search results there will be a series that was updated last. The same series can have several mnemonics at once, and you can search for any of them. 
+The search by mnemonics is implemented in knoema. Mnemonics is a unique identifier of the series. Different datasets can have the same series with the same mnemonics. In this case, in the search results there will be a series that was updated last. The same series can have several mnemonics at once, and you can search for any of them. 
 An example of using the search for mnemonics::
 
     data_frame = knoema.get('dataset_id', mnemonics = 'mnemonic1;mnemonic2')

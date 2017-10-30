@@ -180,7 +180,7 @@ class DataReader(object):
             pandas_data_frame.columns.names = names_of_dimensions
         return pandas_data_frame
 
-    def get_pandasframe_for_mnemonics(self):
+    def get_pandasframe_by_mnemonics(self):
         pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
         if self.include_metadata:
@@ -235,7 +235,7 @@ class DataReader(object):
                 self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
         # the case for search by mnemonics
         if len(self.dim_values) == 1 and 'mnemonics' in self.dim_values:
-             return self.get_pandasframe_for_mnemonics()
+             return self.get_pandasframe_by_mnemonics()
         # the case of obtaining series by the selection 
         return self.get_pandasframe_by_selection()
 

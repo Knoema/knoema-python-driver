@@ -490,3 +490,31 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.get_value('Country Id',sname),'158')
         self.assertEqual(metadata.get_value('Subject Id',sname),'FLIBOR6')
         self.assertEqual(metadata.get_value('Unit',sname),'Percent')
+
+    def test_search_by_mnemonics_data(self):
+        """The method is testing searching by mnemonics"""
+        data_frame = knoema.get("eqohmpb", mnemonics="512NGDP_A_in_test_dataset")
+        self.assertEqual(data_frame.shape[1], 1)
+        self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
+        sname = ('Afghanistan','Gross domestic product, current prices','A')
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 0)
+
+    def test_search_by_mnemonics_with_metadata(self):
+        """The method is testing searching by mnemonics with metadata"""
+        data_frame, metadata = knoema.get("eqohmpb", True, mnemonics="512NGDP_A_in_test_dataset")
+        self.assertEqual(data_frame.shape[1], 1)
+        self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
+        sname = ('Afghanistan','Gross domestic product, current prices','A')
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 0)
+        self.assertEqual(metadata.shape[1], 1)
+        self.assertEqual(metadata.shape[0], 5)
+        self.assertEqual(['Country', 'Indicator', 'Frequency'], metadata.columns.names)
+        sname = ('Afghanistan','Gross domestic product, current prices','A')
+        self.assertEqual(metadata.get_value('Country Id',sname),'512')
+        self.assertEqual(metadata.get_value('Indicator Id',sname),'NGDP')
+        self.assertEqual(metadata.get_value('Unit',sname),'Number')       
+        self.assertEqual(metadata.get_value('Mnemonics',sname),'512NGDP_A_in_test_dataset')  

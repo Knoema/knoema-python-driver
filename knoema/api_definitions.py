@@ -183,8 +183,8 @@ class RawDataResponse(object):
 
     def __init__(self, data):
 
-        self.continuationToken = data['continuationToken']
-        self.tuples = data['data']
+        self.continuation_token = data['continuationToken']
+        self.series = data['data']
 
 class MnemonicsResponse(object):
 

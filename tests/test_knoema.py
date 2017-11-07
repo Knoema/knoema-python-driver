@@ -63,7 +63,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_by_member_id_range(self):
         """The method is testing getting multiple series by dimension member ids and time range"""
-  
+
         data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp', timerange='2015-2020')
         self.assertEqual(data_frame.shape[0], 6)
         self.assertEqual(data_frame.shape[1], 6)
@@ -101,7 +101,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_singlefrequency_by_member_id(self):
         """The method is testing getting mulitple series with one frequency by dimension member ids"""
-  
+
         data_frame = knoema.get('MEI_BTS_COS_2015', location=['AT', 'AU'], subject='BSCI', measure='blsa', frequency='Q')
         self.assertEqual(data_frame.shape[1], 2)
 
@@ -111,7 +111,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_multifrequency_by_member_id(self):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
-       
+     
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
         self.assertEqual(data_frame.shape[1], 3)
 
@@ -301,7 +301,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_include_metadata_true(self):
         """The method is testing getting multiple series with data and metadata"""
- 
+
         data, metadata = knoema.get('IMFWEO2017Apr', True, country=['914','512'], subject='lp')
         self.assertEqual(data.shape[0], 43)
         self.assertEqual(data.shape[1], 2)
@@ -375,13 +375,6 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertAlmostEqual(metadata.get_value('Unit', sname), 'Unit')
         self.assertAlmostEqual(metadata.get_value('Scale', sname), 1.0)
         self.assertAlmostEqual(metadata.get_value('Mnemonics', sname), 'RRRRRRRRR')
-
-    def test_get_data_from_dataset_big_selection(self):
-        """The method is testing load data from regular dataset with big selection"""
-        
-        with self.assertRaises(ValueError) as context:
-            data = knoema.get('IMFWEO2017Apr', frequency='A', Country='512;914;612;614;311;213;911;193;122;912;313;419;513;316;913;124;339;638;514;218;963;616;223;516;918;748;618;624;522;622;156;626;628;228;924;233;632;636;634;238;662;960;423;935;128', Subject='NGDP_RPCH;NGDP_RPCHMK;NGDPD;NGDP;NGDP_R;NGDP_D;NGDP_FY;PPPGDP;PPPPC;PPPSH;NGDPDPC;NGDPPC;NGDPRPC;NGSD_NGDP;NID_NGDP;PPPEX;NGAP_NPGDP;PCPIPCH;PCPIEPCH;PCPI;PCPIE;FLIBOR3;FLIBOR6;TRADEPCH;TM_RPCH;TMG_RPCH;TX_RPCH;TXG_RPCH;TTPCH;TTTPCH;TXGM_D;TXGM_DPCH;LP;LE;LUR')
-        self.assertTrue("Underlying data is very large. Can't create visualization." in str(context.exception))   
        
     def test_get_data_from_flat_dataset_with_multi_measures_and_metadata(self):
         """The method is testing load data from flat dataset with with mulitple measures and metadata"""
@@ -406,7 +399,6 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.get_value('Scale',sname),1)
         self.assertEqual(metadata.get_value('Unit',sname),'None')
 
-
     def test_get_data_from_flat_dataset_without_time_and_with_metadata(self):
         """The method is testing load data from flat dataset without time and with metadata"""
 
@@ -429,7 +421,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_weekly_frequency(self):
         """The method is testing load data from regular dataset by weekly frequency"""
-     
+  
         data = knoema.get('WOERDP2015', location='China', Indicator='EMBI Sovereign Spreads (Basis points)', frequency='W')
         sname = ('China', 'EMBI Sovereign Spreads (Basis points)', 'W')
         value = data.get_value(datetime.datetime(2010, 1, 4), sname)
@@ -439,6 +431,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_incorrect_host_knoema_get(self):
         """The method is negative test on get series from dataset with incorrect host"""
+
         with self.assertRaises(ValueError) as context:
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
@@ -447,6 +440,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_incorrect_host_delete_dataset(self):
         """The method is negative test on delete dataset with incorrect host"""
+
         with self.assertRaises(ValueError) as context:
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
@@ -455,6 +449,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_incorrect_host_verify_dataset(self):
         """The method is negative test on verify dataset with incorrect host"""
+
         with self.assertRaises(ValueError) as context:
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
@@ -466,7 +461,6 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting series with partial selection"""
 
         data_frame = knoema.get('IMFWEO2017Apr', subject = 'flibor6')
-
         self.assertEqual(data_frame.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
 
@@ -483,16 +477,16 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting series with partial selection"""
 
         data_frame, metadata = knoema.get('IMFWEO2017Apr', True, subject = 'flibor6')
-
         self.assertEqual(metadata.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
         sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')
         self.assertEqual(metadata.get_value('Country Id',sname),'158')
         self.assertEqual(metadata.get_value('Subject Id',sname),'FLIBOR6')
         self.assertEqual(metadata.get_value('Unit',sname),'Percent')
-
+ 
     def test_search_by_mnemonics_data(self):
         """The method is testing searching by mnemonics"""
+
         data_frame = knoema.get("eqohmpb", mnemonics="512NGDP_A_in_test_dataset")
         self.assertEqual(data_frame.shape[1], 1)
         self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
@@ -503,6 +497,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_search_by_mnemonics_with_metadata(self):
         """The method is testing searching by mnemonics with metadata"""
+
         data_frame, metadata = knoema.get("eqohmpb", True, mnemonics="512NGDP_A_in_test_dataset")
         self.assertEqual(data_frame.shape[1], 1)
         self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)

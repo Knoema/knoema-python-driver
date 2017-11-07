@@ -118,6 +118,21 @@ class ApiClient:
         path = '/api/1.0/data/pivot/'
         return self._api_post(definition.PivotResponse, path, pivotrequest)
 
+    def get_data_raw(self, request):
+        """The method is getting data by raw request"""
+        path = '/api/1.0/data/raw/'
+        res = self._api_post(definition.RawDataResponse, path, request)
+        token = res.continuationToken
+        while token is not None:
+           res2 = self.get_data_raw_with_token(token)
+           res.tuples += res2.tuples
+           token = res2.continuationToken 
+        return res
+
+    def get_data_raw_with_token(self, token):
+        path = '/api/1.0/data/raw/?continuationToken={0}'
+        return self._api_get(definition.RawDataResponse, path.format(token))
+
     def get_mnemonics (self, mnemonics):
         """The method get series by mnemonics"""
         path = '/api/1.0/data/mnemonics?mnemonics={0}'

@@ -86,6 +86,7 @@ class Dataset(object):
             raise ValueError(data)
 
         self.id = data['id']
+        self.type = data['type']
         self.dimensions = [DimensionModel(dim) for dim in data['dimensions']]
         self.timeseries_attributes = [TimeSeriesAttribute(attr) for attr in data['timeseriesAttributes']] if 'timeseriesAttributes' in data else []
             
@@ -175,6 +176,14 @@ class PivotResponse(object):
         for item in data['filter']:
             self.filter.append(PivotItem(item['dimensionId'], item['members']))
 
+        self.tuples = data['data']
+
+class RawDataResponse(object):
+    """The class contains raw data response"""
+
+    def __init__(self, data):
+
+        self.continuationToken = data['continuationToken']
         self.tuples = data['data']
 
 class MnemonicsResponse(object):

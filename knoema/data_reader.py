@@ -104,11 +104,6 @@ class DataReader(object):
         names.append(series_point['Frequency'])
         return tuple(names) 
 
-    def _get_series_name(self, series_point):
-        if self.dataset.type == 'Regular':
-           return self._get_series_name_for_streaming_api(series_point)
-        return self._get_series_name_for_pivot_api(series_point)
-
     def _get_series_name_with_metadata_for_streaming_api(self, series_point):
         names = []
         for dim in self.dimensions:
@@ -146,12 +141,6 @@ class DataReader(object):
         for attr in self.dataset.timeseries_attributes:
             names.append(series_point.get(attr.name))  
         return tuple(names)     
-
-    def _get_series_name_with_metadata(self, series_point):
-        
-        if self.dataset.type == 'Regular':
-            return (self._get_series_name_with_metadata_for_streaming_api(series_point))
-        return (self._get_series_name_with_metadata_for_pivot_api(series_point))
 
     def _get_attribute_names(self):
         names = []
@@ -194,16 +183,11 @@ class DataReader(object):
                 series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
         return series    
 
-    def _get_metadata_series(self, resp, names_of_attributes):
-        if (self.dataset.type == 'Regular'):
-            return (self._get_metadata_series_for_streaming_api(resp, names_of_attributes))
-        return (self._get_metadata_series_for_pivot_api(resp, names_of_attributes))
-
     def _get_data_series_for_streaming_api(self, resp):
         series = {}
         for series_point in resp.series:  
             all_values = series_point['values']  
-            series_name = self._get_series_name(series_point)
+            series_name = self._get_series_name_for_streaming_api(series_point)
             data_begin_val = datetime.strptime(series_point['startDate'], '%Y-%m-%dT%H:%M:%S')    
             data_end_val = datetime.strptime(series_point['endDate'], '%Y-%m-%dT%H:%M:%S')
             if (series_point['frequency'] == "W"):
@@ -244,11 +228,6 @@ class DataReader(object):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
             series[series_name].add_value(series_point['Value'], curr_date_val)
         return series    
-
-    def _get_data_series(self, resp):
-        if self.dataset.type == 'Regular':
-            return (self._get_data_series_for_streaming_api(resp))
-        return (self._get_data_series_for_pivot_api(resp))
 
     def get_delta(self,frequency):
         if  frequency =='A': 
@@ -304,7 +283,7 @@ class DataReader(object):
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
         return pandas_data_frame, pandas_data_frame_with_attr
 
-    def get_pandasframe_by_selection(self):
+    def get_pandasframe_for_regular_dataset(self):
         pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
         if self.include_metadata:
@@ -312,23 +291,41 @@ class DataReader(object):
             names_of_attributes = self._get_attribute_names()
 
         pivot_req = self._create_pivot_request()
-        type_of_dataset = self.dataset.type
-        if type_of_dataset == 'Regular':
-            pivot_resp = self.client.get_data_raw(pivot_req)
-        else:
-            pivot_resp = self.client.get_data(pivot_req)
+        data_streaming = self.client.get_data_raw(pivot_req)
         # create dataframe with data
-        series = self._get_data_series(pivot_resp)
+        series = self._get_data_series_for_streaming_api(data_streaming)
         pandas_series = self.creates_pandas_series(series, pandas_series)
         pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
         if not self.include_metadata:
             return pandas_data_frame
             
         # create dataframe with metadata
-        series_with_attr = self._get_metadata_series(pivot_resp, names_of_attributes)
+        series_with_attr = self._get_metadata_series_for_streaming_api(data_streaming, names_of_attributes)
         pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
-        return pandas_data_frame, pandas_data_frame_with_attr   
+        return pandas_data_frame, pandas_data_frame_with_attr
+
+    def get_pandasframe_for_flat_dataset(self):
+        pandas_series = {}
+        names_of_dimensions = self._get_dimension_names()
+        if self.include_metadata:
+            pandas_series_with_attr = {}
+            names_of_attributes = self._get_attribute_names()
+
+        pivot_req = self._create_pivot_request()
+        pivot_resp = self.client.get_data(pivot_req)
+        # create dataframe with data
+        series = self._get_data_series_for_pivot_api(pivot_resp)
+        pandas_series = self.creates_pandas_series(series, pandas_series)
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
+        if not self.include_metadata:
+            return pandas_data_frame
+            
+        # create dataframe with metadata
+        series_with_attr = self._get_metadata_series_for_pivot_api(pivot_resp, names_of_attributes)
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        return pandas_data_frame, pandas_data_frame_with_attr
 
     def get_pandasframe(self):
         """The method loads data from dataset"""
@@ -337,8 +334,11 @@ class DataReader(object):
         # the case for search by mnemonics
         if len(self.dim_values) == 1 and 'mnemonics' in self.dim_values:
              return self.get_pandasframe_by_mnemonics()
+        
         # the case of obtaining series by the selection 
-        return self.get_pandasframe_by_selection()
+        if self.dataset.type == 'Regular':
+            return self.get_pandasframe_for_regular_dataset()
+        return self.get_pandasframe_for_flat_dataset()
 
 class KnoemaSeries(object):
     """This class combines values and index points for one time series"""

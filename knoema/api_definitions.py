@@ -38,27 +38,30 @@ class Dimension(DimensionModel):
         super().__init__(data)
         self.fields = data ['fields']
         self.items = [DimensionMember(item) for item in data['items']]
+
+        # fill maps
+        self.key_map = {}
+        self.id_map = {}
+        self.name_map = {}
+        for item in self.items:
+            self.key_map[item.key] = item
+            self.name_map[item.name.upper()] = item
+            if 'id' in item.fields:
+                self.id_map[item.fields['id'].upper()] = item
+
         
     def find_member_by_key(self, member_key):
         """The method searches member of dimension by given member key"""
-        for item in self.items:
-            if item.key == member_key:
-                return item
-        return None
+        return self.key_map.get(member_key)
+
 
     def find_member_by_id(self, member_id):
         """The method searches member of dimension by given member id"""
-        for item in self.items:
-            if 'id' in item.fields and is_equal_strings_ignore_case(item.fields['id'], member_id):
-                return item
-        return None
+        return self.id_map.get(member_id.upper())
 
     def find_member_by_name(self, member_name):
         """The method searches member of dimension by given member name"""
-        for item in self.items:
-            if is_equal_strings_ignore_case(item.name, member_name):
-                return item
-        return None
+        return self.name_map.get(member_name.upper())
 
 
 class DateRange(object):

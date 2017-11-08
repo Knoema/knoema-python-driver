@@ -185,6 +185,13 @@ class DataReader(object):
 
     def _get_data_series_for_streaming_api(self, resp):
         series = {}
+        dict_with_delta = {
+            'A': relativedelta(years = 1),
+            'H': relativedelta(months = 6),
+            'Q': relativedelta(months = 3),
+            'M': relativedelta(months = 1),
+            'W': timedelta(days = 7),
+            'D': timedelta(days = 1)}
         for series_point in resp.series:  
             all_values = series_point['values']  
             series_name = self._get_series_name_for_streaming_api(series_point)
@@ -193,7 +200,7 @@ class DataReader(object):
             if (series_point['frequency'] == "W"):
                 data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
                 data_end_val = data_end_val - timedelta(days = data_end_val.weekday())
-            delta = self.get_delta(series_point['frequency'])
+            delta = dict_with_delta[series_point['frequency']]
             curr_date_val = data_begin_val
             index = []
             values = []
@@ -228,20 +235,6 @@ class DataReader(object):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
             series[series_name].add_value(series_point['Value'], curr_date_val)
         return series    
-
-    def get_delta(self,frequency):
-        if  frequency =='A': 
-            return relativedelta(years = 1)
-        if frequency == 'H':
-            return relativedelta(months = 6)
-        if frequency ==  'Q': 
-            return relativedelta(months = 3)
-        if frequency ==  'M': 
-            return relativedelta(months = 1)
-        if frequency ==  'W': 
-            return timedelta(days = 7)
-        if frequency ==  'D': 
-            return timedelta(days = 1)
 
     def creates_pandas_series(self, series, pandas_series):
         for series_name, series_content in series.items():

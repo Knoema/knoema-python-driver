@@ -316,8 +316,7 @@ class TestKnoemaClient(unittest.TestCase):
     def test_verify_dataset_negative(self):
         """The method is negative test on dataset verification"""
         apicfg = knoema.ApiConfig()
-        apicfg.app_id = "bHcV5UkOVyKcBw"
-        apicfg.app_secret = "/0itYgLqnD0i49kmdBVSZ1qLjPU"
+        apicfg.host = "knoema.com"
         with self.assertRaises(ValueError) as context:
             knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
         self.assertTrue("Dataset has not been verified, because of the following error(s): Requested dataset doesn't exist or you don't have access to it." in str(context.exception))

@@ -8,10 +8,13 @@ import urllib
 class TestKnoemaClient(unittest.TestCase):
     """This is class with knoema client unit tests"""
 
+    def setUp(self):
+        apicfg = knoema.ApiConfig()
+        apicfg.host = 'knoema.com'
+
     def test_getdata_singleseries_by_member_id(self):
         """The method is testing getting single series by dimension member ids"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
         self.assertEqual(data_frame.shape[0], 43)
         self.assertEqual(data_frame.shape[1], 1)
@@ -29,8 +32,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_by_member_id(self):
         """The method is testing getting multiple series by dimension member ids"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp')
         self.assertEqual(data_frame.shape[0], 43)
         self.assertEqual(data_frame.shape[1], 6)
@@ -48,8 +50,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_by_member_name(self):
         """The method is testing getting data by dimension member names"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         subj_names = 'Gross domestic product, current prices (National currency);population (persons)'
         data_frame = knoema.get('IMFWEO2017Apr', country='albania;afghanistan;united states', subject=subj_names)
         self.assertEqual(data_frame.shape[0], 43)
@@ -66,9 +67,8 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_by_member_id_range(self):
         """The method is testing getting multiple series by dimension member ids and time range"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
         data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp', timerange='2015-2020')
+
         self.assertEqual(data_frame.shape[0], 6)
         self.assertEqual(data_frame.shape[1], 6)
 
@@ -83,8 +83,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_singleseries_difffrequencies_by_member_id(self):
         """The method is testing getting single series on different frequencies by dimension member ids"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT', subject='BSCI', measure='blsa')
         self.assertEqual(data_frame.shape[1], 2)
 
@@ -106,8 +105,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_singlefrequency_by_member_id(self):
         """The method is testing getting mulitple series with one frequency by dimension member ids"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('MEI_BTS_COS_2015', location=['AT', 'AU'], subject='BSCI', measure='blsa', frequency='Q')
         self.assertEqual(data_frame.shape[1], 2)
 
@@ -117,8 +115,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_multifrequency_by_member_id(self):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
         self.assertEqual(data_frame.shape[1], 3)
 
@@ -128,8 +125,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_multifrequency_by_member_id_range(self):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids with time range"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;BE', subject='BSCI', measure='blsa', frequency='Q;M', timerange='2010M1-2015M12')
         self.assertEqual(data_frame.shape[1], 3)
 
@@ -139,8 +135,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_none_dataset(self):
         """The method is testing if dataset set up as None"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         with self.assertRaises(ValueError) as context:
             knoema.get(None)
 
@@ -148,8 +143,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_no_selection(self):
         """The method is testing if there is no dimensions specified"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         with self.assertRaises(ValueError) as context:
             knoema.get('IMFWEO2017Apr')
 
@@ -157,8 +151,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_wrong_dimension(self):
         """The method is testing if there is wrong dimension name is specified"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"     
+   
         with self.assertRaises(ValueError) as context:
             knoema.get('IMFWEO2017Apr', indicator='LP;NGDP')
 
@@ -166,8 +159,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_empty_dimension_selection(self):
         """The method is testing if there are no elements in dimension selection"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         with self.assertRaises(ValueError) as context:
             knoema.get('IMFWEO2017Apr', country='', subject='LP;NGDP')
 
@@ -175,8 +167,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_wrong_dimension_selection(self):
         """The method is testing if there are incorrect in dimension selection"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         with self.assertRaises(ValueError) as context:
             knoema.get('IMFWEO2017Apr', country='914;512;111', subject='L1P;N1GDP')
 
@@ -184,8 +175,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_from_flat_dataset(self):
         """The method is testing load data from flat dataset"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('cblymmf', Country='Albania;Australia', Keyword='FGP;TWP;TRP')
         self.assertEqual(data_frame.shape[0], 1)
         self.assertEqual(data_frame.shape[1], 4)
@@ -196,8 +186,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_from_dataset_with_multiword_dimnames(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('FDI_FLOW_CTRY', **{'Reporting country': 'AUS',
                                                     'Partner country/territory': 'w0',
                                                     'Measurement principle': 'DI',
@@ -222,8 +211,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_from_flat_dataset_with_multi_measures(self):
         """The method is testing load data from flat dataset with with mulitple measures"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('bmlaaaf', **{'Country': 'Albania',
                                               'Borrower': 'Ministry of Finance',
                                               'Guarantor': 'Albania',
@@ -241,8 +229,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_from_flat_dataset_without_time(self):
         """The method is testing load data from flat dataset without time"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('pocqwkd', **{'Object type': 'Airports',
                                               'Object name': 'Bakel airport'})
 
@@ -255,8 +242,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_incorrect_dataset_id(self):
         """The method is testing if dataset id set up incorrectly"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         with self.assertRaises(ValueError) as context:
             knoema.get('incorrect id', somedim='val1;val2')
 
@@ -264,8 +250,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_getdata_multiseries_by_member_key(self):
         """The method is testing getting multiple series by dimension member keys"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('IMFWEO2017Apr', country='1000010;1000000;1001830', subject='1000370;1000040')
         self.assertEqual(data_frame.shape[0], 43)
         self.assertEqual(data_frame.shape[1], 6)
@@ -281,8 +266,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_from_dataset_by_dim_ids(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names by dim ids"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('FDI_FLOW_CTRY', **{'Reporting-country': 'AUS',
                                                     'Partner-country': 'w0',
                                                     'Measurement-principle': 'DI',
@@ -307,24 +291,21 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_delete_dataset_negative(self):
         """The method is negative test on dataset deletion"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"          
+         
         with self.assertRaises(urllib.error.HTTPError) as context:
             knoema.delete('non_existing_id')
         self.assertTrue('HTTP Error 400: Bad Request' in str(context.exception))
 
     def test_verify_dataset_negative(self):
         """The method is negative test on dataset verification"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         with self.assertRaises(ValueError) as context:
             knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
         self.assertTrue("Dataset has not been verified, because of the following error(s): Requested dataset doesn't exist or you don't have access to it." in str(context.exception))
 
     def test_include_metadata_true(self):
         """The method is testing getting multiple series with data and metadata"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data, metadata = knoema.get('IMFWEO2017Apr', True, country=['914','512'], subject='lp')
         self.assertEqual(data.shape[0], 43)
         self.assertEqual(data.shape[1], 2)
@@ -347,8 +328,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names include metadata"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+  
         data_frame, metadata = knoema.get('FDI_FLOW_CTRY', True,**{'Reporting country': 'AUS',
                                                     'Partner country/territory': 'w0',
                                                     'Measurement principle': 'DI',
@@ -373,8 +353,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata_and_mnemomics(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names include metadata and mnemonics"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame, metadata = knoema.get('xwfebbf', True,**{'Country': '1000000',
                                                     'Indicator': '1000000',
                                                     'Adjustment Type': '1000000',
@@ -403,8 +382,7 @@ class TestKnoemaClient(unittest.TestCase):
        
     def test_get_data_from_flat_dataset_with_multi_measures_and_metadata(self):
         """The method is testing load data from flat dataset with with mulitple measures and metadata"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame, metadata = knoema.get('bmlaaaf', True, **{'Country': 'Albania',
                                               'Borrower': 'Ministry of Finance',
                                               'Guarantor': 'Albania',
@@ -427,8 +405,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_from_flat_dataset_without_time_and_with_metadata(self):
         """The method is testing load data from flat dataset without time and with metadata"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame, metadata = knoema.get('pocqwkd',True, **{'Object type': 'Airports',
                                               'Object name': 'Bakel airport'})
 
@@ -448,8 +425,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_weekly_frequency(self):
         """The method is testing load data from regular dataset by weekly frequency"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+   
         data = knoema.get('WOERDP2015', location='China', Indicator='EMBI Sovereign Spreads (Basis points)', frequency='W')
         sname = ('China', 'EMBI Sovereign Spreads (Basis points)', 'W')
         value = data.get_value(datetime.datetime(2010, 1, 4), sname)
@@ -459,6 +435,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_incorrect_host_knoema_get(self):
         """The method is negative test on get series from dataset with incorrect host"""
+
         with self.assertRaises(ValueError) as context:
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
@@ -467,6 +444,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_incorrect_host_delete_dataset(self):
         """The method is negative test on delete dataset with incorrect host"""
+
         with self.assertRaises(ValueError) as context:
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
@@ -475,6 +453,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_incorrect_host_verify_dataset(self):
         """The method is negative test on verify dataset with incorrect host"""
+
         with self.assertRaises(ValueError) as context:
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
@@ -484,8 +463,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_with_partial_selection(self):
         """The method is testing getting series with partial selection"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get('IMFWEO2017Apr', subject = 'flibor6')
         self.assertEqual(data_frame.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
@@ -501,8 +479,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_get_data_with_partial_selection_with_metadata(self):
         """The method is testing getting series with partial selection"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame, metadata = knoema.get('IMFWEO2017Apr', True, subject = 'flibor6')
         self.assertEqual(metadata.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
@@ -513,8 +490,7 @@ class TestKnoemaClient(unittest.TestCase):
  
     def test_search_by_mnemonics_data(self):
         """The method is testing searching by mnemonics"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame = knoema.get("eqohmpb", mnemonics="512NGDP_A_in_test_dataset")
         self.assertEqual(data_frame.shape[1], 1)
         self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
@@ -525,8 +501,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_search_by_mnemonics_with_metadata(self):
         """The method is testing searching by mnemonics with metadata"""
-        apicfg = knoema.ApiConfig()
-        apicfg.host = "knoema.com"
+
         data_frame, metadata = knoema.get("eqohmpb", True, mnemonics="512NGDP_A_in_test_dataset")
         self.assertEqual(data_frame.shape[1], 1)
         self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)

@@ -4,20 +4,27 @@ from knoema.api_config import ApiConfig
 from knoema.api_client import ApiClient
 from knoema.data_reader import DataReader
 
-def get(dataset, IncludeMetadata = False, **dim_values):
+def get(dataset = None, IncludeMetadata = False, mnemonics = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
 
-    if not dataset:
+    if not dataset and not mnemonics:
         raise ValueError('Dataset id is not specified')
 
-    if not dim_values:
+    if dataset and not mnemonics and not dim_values:
         raise ValueError('Dimensions members are not specified')
+
+    if mnemonics and dim_values:
+        raise ValueError('The function does not support the simultaneous use of mnemonic and selection')
 
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
     client.check_correct_host()
+    if not dataset and mnemonics:     
+        data_reader = DataReader(client, dataset, dim_values, IncludeMetadata, mnemonics)
+        return data_reader.get_pandasframe_by_mnemonics_in_all_datasets()
+      
     dataset = client.get_dataset(dataset)
-    data_reader = DataReader(client, dataset, dim_values, IncludeMetadata)
+    data_reader = DataReader(client, dataset, dim_values, IncludeMetadata, mnemonics)
 
     return data_reader.get_pandasframe()
 

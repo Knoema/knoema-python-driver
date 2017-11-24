@@ -189,12 +189,18 @@ class RawDataResponse(object):
         self.continuation_token = data['continuationToken']
         self.series = data['data']
 
-class MnemonicsResponse(object):
+class MnemonicsResponseList(object):
 
     def __init__(self,data):
         self.items = []
         for item in data:
-            self.items.append(PivotResponse(item['pivot']))
+            self.items.append(MnemonicsResponse(item))   
+
+class MnemonicsResponse(object):
+
+    def __init__(self,data):
+        self.mnemonics = data['mnemonics']
+        self.pivot = PivotResponse(data['pivot'])
 
 class FileProperties(object):
     """The class contains response from upload post request"""

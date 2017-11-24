@@ -9,12 +9,13 @@ import knoema.api_definitions as definition
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""
 
-    def __init__(self, client, dataset, dim_values, include_metadata):
+    def __init__(self, client, dataset, dim_values, include_metadata, mnemonics):
         self.client = client
         self.dataset = dataset
         self.dim_values = dim_values
         self.dimensions = []
         self.include_metadata = include_metadata
+        self.mnemonics = mnemonics
 
     def _get_dim_members(self, dim, splited_values):
 
@@ -104,6 +105,11 @@ class DataReader(object):
         names.append(series_point['Frequency'])
         return tuple(names) 
 
+
+    def _get_series_name_for_search_by_mnemonics(self, series_point):
+        names = [series_point['Mnemonics']]
+        return tuple(names) 
+
     def _get_series_name_with_metadata_for_streaming_api(self, series_point):
         names = []
         for dim in self.dimensions:
@@ -130,11 +136,15 @@ class DataReader(object):
                 if item.name == series_point[dim.id]:
                     dim_attrs = item.fields
                     break
-            for attr in dim.fields: 
+            for attr in dim.fields:          
                 if not attr['isSystemField']: 
+                    value_empty = True
                     for key, value in dim_attrs.items(): 
                         if definition.is_equal_strings_ignore_case(key, attr['name']):
                             names.append(value)
+                            value_empty = False
+                    if value_empty:
+                        names.append(float("NaN"))
         names.append(series_point.get('Unit'))
         names.append(series_point.get('Scale'))
         names.append(series_point.get('Mnemonics'))
@@ -181,7 +191,19 @@ class DataReader(object):
             if serie_name not in series:
                 serie_attrs = self._get_series_name_with_metadata_for_pivot_api(series_point)
                 series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
-        return series    
+        return series
+
+    def _get_metadata_series_for_search_by_mnemonics_in_all_dataset(self, resp, names_of_attributes):
+        series = {}
+        for series_point in resp.tuples:
+            val = series_point['Value']
+            if val is None:
+                continue
+            serie_name = self._get_series_name_for_search_by_mnemonics(series_point)
+            if serie_name not in series:
+                serie_attrs = self._get_series_name_with_metadata_for_pivot_api(series_point)
+                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
+        return series  
 
     def _get_data_series_for_streaming_api(self, resp):
         series = {}
@@ -234,7 +256,28 @@ class DataReader(object):
             if (series_point['Frequency'] == "W"):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
             series[series_name].add_value(series_point['Value'], curr_date_val)
-        return series    
+        return series
+
+    def _get_data_series_for_searching_by_mnemonics_in_all_datasets(self, resp):
+        series = {}
+        for series_point in resp.tuples:
+            val = series_point['Value']
+            if val is None:
+                continue
+            series_name = self._get_series_name_for_search_by_mnemonics(series_point)
+            if series_name not in series:
+                series[series_name] = KnoemaSeries(series_name,[],[])
+
+            curr_date_val = series_point['Time']
+            try:
+                curr_date_val = datetime.strptime(series_point['Time'], '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                pass
+
+            if (series_point['Frequency'] == "W"):
+                curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
+            series[series_name].add_value(series_point['Value'], curr_date_val)
+        return series 
 
     def creates_pandas_series(self, series, pandas_series):
         for series_name, series_content in series.items():
@@ -248,18 +291,20 @@ class DataReader(object):
             pandas_data_frame.columns.names = names_of_dimensions
         return pandas_data_frame
 
-    def get_pandasframe_by_mnemonics(self):
+    def get_pandasframe_by_mnemonics_in_one_dataset(self):
         pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
         if self.include_metadata:
             pandas_series_with_attr = {}
             names_of_attributes = self._get_attribute_names()
 
-        mnemonics = self.dim_values['mnemonics']
+        mnemonics = self.mnemonics
         mnemonics_string = ';'.join(mnemonics) if isinstance(mnemonics, list) else mnemonics
-        mnemonics_resp = self.client.get_mnemonics(mnemonics_string)          
+        mnemonics_resp = self.client.get_mnemonics(mnemonics_string)
+
             
-        for pivot_resp in mnemonics_resp.items:
+        for item in mnemonics_resp.items:
+            pivot_resp = item.pivot
             if not definition.is_equal_strings_ignore_case(self.dataset.id, pivot_resp.dataset):
                 continue
             # create dataframe with data for mnemonics
@@ -274,6 +319,56 @@ class DataReader(object):
         if not self.include_metadata:
             return pandas_data_frame
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        return pandas_data_frame, pandas_data_frame_with_attr
+
+    def get_pandasframe_by_mnemonics_in_all_datasets(self):
+           
+        mnemonics_string = ';'.join(self.mnemonics) if isinstance(self.mnemonics, list) else self.mnemonics
+        mnemonics_resp = self.client.get_mnemonics(mnemonics_string)
+
+        dataset_list = []
+        dict_datasets = {}
+        dict_dimensions = {} 
+        pandas_series = {}
+        if self.include_metadata:
+            pandas_series_with_attr = {}
+            dict_attributes_names = {}
+
+        for item in mnemonics_resp.items:
+            pivot_resp = item.pivot
+            mnemonics = item.mnemonics
+            dataset_id = pivot_resp.dataset
+            if dataset_id  not in dataset_list:
+                dataset_list.append(dataset_id)
+                dataset = self.client.get_dataset(dataset_id)
+                self.dataset = dataset
+                dict_datasets[dataset_id] = dataset
+                dimensions = []
+                for dim in dataset.dimensions:
+                    dimensions.append(self.client.get_dimension(dataset_id, dim.id))
+                dict_dimensions[dataset_id] = dimensions
+                self.dimensions = dimensions
+                if self.include_metadata:
+                    names_of_attributes = self._get_attribute_names()
+                    dict_attributes_names[dataset_id] = names_of_attributes
+            else:
+                self.dataset = dict_datasets[dataset_id]
+                self.dimensions = dict_dimensions[dataset_id]
+                if self.include_metadata:
+                    names_of_attributes = dict_attributes_names[dataset_id]
+                    
+            # create dataframe with data for mnemonics
+            series = self._get_data_series_for_searching_by_mnemonics_in_all_datasets(pivot_resp)
+            pandas_series = self.creates_pandas_series(series, pandas_series)
+            if self.include_metadata:
+                # create dataframe with metadata for mnemonics
+                series_with_attr = self._get_metadata_series_for_search_by_mnemonics_in_all_dataset(pivot_resp, names_of_attributes)
+                pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)     
+
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, [])
+        if not self.include_metadata:
+            return pandas_data_frame
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, [])         
         return pandas_data_frame, pandas_data_frame_with_attr
 
     def get_pandasframe_for_regular_dataset(self):
@@ -325,8 +420,8 @@ class DataReader(object):
         for dim in self.dataset.dimensions:
                 self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
         # the case for search by mnemonics
-        if len(self.dim_values) == 1 and 'mnemonics' in self.dim_values:
-             return self.get_pandasframe_by_mnemonics()
+        if not self.mnemonics is None:
+             return self.get_pandasframe_by_mnemonics_in_one_dataset()
         
         # the case of obtaining series by the selection 
         if self.dataset.type == 'Regular':

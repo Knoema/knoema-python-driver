@@ -290,7 +290,9 @@ class StreamingDataReader(SelectionDataReader):
             series[series_name] = KnoemaSeries(series_name,values,index)
         return series
 
-    def get_pandasframe_for_regular_dataset(self):
+    def get_pandasframe(self):
+        for dim in self.dataset.dimensions:
+            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
         pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
         if self.include_metadata:
@@ -311,11 +313,6 @@ class StreamingDataReader(SelectionDataReader):
         pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
         return pandas_data_frame, pandas_data_frame_with_attr
-
-    def get_pandasframe(self):
-        for dim in self.dataset.dimensions:
-            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
-        return self.get_pandasframe_for_regular_dataset()
 
 class MnemonicsDataReader(DataReader):
 

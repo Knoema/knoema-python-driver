@@ -151,6 +151,10 @@ An example of using the search for mnemonics::
     data_frame = knoema.get('dataset_id', mnemonics = 'mnemonic1;mnemonic2')
     data_frame, metadata = knoema.get('dataset_id',True, mnemonics = ['mnemonic1','mnemonic2'])
 
+if you are looking for mnemonics in several datasets at once or/and do not know their id, you can use this example::
+    data_frame = knoema.get(mnemonics = 'mnemonic1;mnemonic2')
+    data_frame = knoema.get(None, mnemonics = 'mnemonic1;mnemonic2')
+    data_frame, metadata = knoema.get(dataset = None, include_metadata = True, mnemonics = ['mnemonic1','mnemonic2'])
 
 *******************************************************
 Possible errors in Knoema package and how to avoid them
@@ -245,4 +249,10 @@ Example::
 You can avoid this error using datetime instead string date.
 Example::
 
-    knoema.verify('IMFWEO2017Apr',datetime(2017,5,7),'IMF','http://knoema.com')  
+    knoema.verify('IMFWEO2017Apr',datetime(2017,5,7),'IMF','http://knoema.com')
+
+13. "ValueError: The function does not support the simultaneous use of mnemonic and selection"
+This error appears when you use mnemonics and selection in one query.
+Example::
+    knoema.get('IMFWEO2017Apr', mnemonics = 'some_mnemonic', country ='912', subject='lp')
+    knoema.get(None, mnemonics = 'some_mnemonic', country = 'USA')

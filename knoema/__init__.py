@@ -2,7 +2,7 @@
 
 from knoema.api_config import ApiConfig
 from knoema.api_client import ApiClient
-from knoema.data_reader import DataReader, ReaderByMnemonics
+from knoema.data_reader import SelectionDataReader, MnemonicsDataReader
 
 def get(dataset = None, include_metadata = False, mnemonics = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
@@ -19,15 +19,13 @@ def get(dataset = None, include_metadata = False, mnemonics = None, **dim_values
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
     client.check_correct_host()
-    if not dataset and mnemonics:     
-        reader_with_mnemo = ReaderByMnemonics(client, dataset, dim_values, include_metadata, mnemonics, [])
-        return reader_with_mnemo.get_pandasframe_by_mnemonics_in_all_datasets()
-      
-    dataset = client.get_dataset(dataset)
-    data_reader = DataReader(client, dataset, dim_values, include_metadata, mnemonics)
 
-    return data_reader.get_pandasframe()
+    reader =  MnemonicsDataReader(client, mnemonics) if mnemonics else SelectionDataReader(client, dim_values)
+    reader.include_metadata = include_metadata
+    reader.dataset = client.get_dataset(dataset) if dataset else None  
 
+    return reader.get_pandasframe()
+ 
 def upload(file_path, dataset=None, public=False):
     """Use this function to upload data to Knoema dataset."""
 

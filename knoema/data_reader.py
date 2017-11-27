@@ -9,87 +9,11 @@ import knoema.api_definitions as definition
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""
 
-    def __init__(self, client, dataset, dim_values, include_metadata, mnemonics):
+    def __init__(self, client):
         self.client = client
-        self.dataset = dataset
-        self.dim_values = dim_values
-        self.dimensions = []
-        self.include_metadata = include_metadata
-        self.mnemonics = mnemonics
-
-    def _get_dim_members(self, dim, splited_values):
-
-        members = []
-        for value in splited_values:
-            if value is None:
-                raise ValueError('Selection for dimension {} is empty'.format(dim.name))
-
-            member = dim.find_member_by_id(value)
-            if member is None:
-                member = dim.find_member_by_name(value)
-
-            if member is None and value.isnumeric():
-                member = dim.find_member_by_key(int(value))
-
-            if member:
-                members.append(member.key)
-
-        return members
-
-    def _find_dimension(self, dim_name_or_id):
-
-        dim = self.dataset.find_dimension_by_name(dim_name_or_id)
-        if dim is None:
-            dim = self.dataset.find_dimension_by_id(dim_name_or_id)
-
-        return dim
-
-    def _create_pivot_request(self):
-
-        pivot_req = definition.PivotRequest(self.dataset.id)
-
-        filter_dims = []
-        time_range = None
-        for name, value in self.dim_values.items():
-            if definition.is_equal_strings_ignore_case(name, 'timerange'):
-                time_range = value
-                continue
-
-            splited_values = value.split(';') if isinstance(value, str) else value
-            if definition.is_equal_strings_ignore_case(name, 'frequency'):
-                pivot_req.frequencies = splited_values
-                continue
-
-            dim = self._find_dimension(name)
-            if dim is None:
-                raise ValueError('Dimension with id or name {} is not found'.
-                                 format(name))
-
-            filter_dims.append(dim)
-
-            for dimension in self.dimensions:
-                if dimension.id == dim.id:
-                    dim = dimension
-                    break
-            members = self._get_dim_members(dim, splited_values)
-            if not members:
-                raise ValueError('Selection for dimension {} is empty'.format(dim.name))
-
-            pivot_req.stub.append(definition.PivotItem(dim.id, members))
-
-        self._add_full_selection_by_empty_dim_values(filter_dims, pivot_req)
-
-        if time_range:
-            pivot_req.header.append(definition.PivotTimeItem('Time', [time_range], 'range'))
-        else:
-            pivot_req.header.append(definition.PivotTimeItem('Time', [], 'AllData'))
-
-        return pivot_req
-
-    def _add_full_selection_by_empty_dim_values(self, filter_dims, pivot_req):
-        out_of_filter_dim_id = [dim.id for dim in self.dataset.dimensions if dim not in filter_dims]
-        for id in out_of_filter_dim_id:
-            pivot_req.stub.append(definition.PivotItem(id, []))
+        self.dataset = None
+        self.include_metadata = False
+        self.dimensions = []     
 
     def _get_series_name_for_pivot_api(self, series_point):
         names = []
@@ -186,48 +110,86 @@ class DataReader(object):
             pandas_data_frame.columns.names = names_of_dimensions
         return pandas_data_frame
 
-    def get_pandasframe_for_flat_dataset(self):
-        pandas_series = {}
-        names_of_dimensions = self._get_dimension_names()
-        if self.include_metadata:
-            pandas_series_with_attr = {}
-            names_of_attributes = self._get_attribute_names()
+class SelectionDataReader(DataReader):
 
-        pivot_req = self._create_pivot_request()
-        pivot_resp = self.client.get_data(pivot_req)
-        # create dataframe with data
-        series = self._get_data_series_for_pivot_api(pivot_resp)
-        pandas_series = self.creates_pandas_series(series, pandas_series)
-        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
-        if not self.include_metadata:
-            return pandas_data_frame
-            
-        # create dataframe with metadata
-        series_with_attr = self._get_metadata_series_for_pivot_api(pivot_resp, names_of_attributes)
-        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
-        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
-        return pandas_data_frame, pandas_data_frame_with_attr
+    def __init__(self, client, dim_values):
+        super().__init__(client)
+        self.dim_values = dim_values
 
-    def get_pandasframe(self):
-        """The method loads data from dataset"""
-        for dim in self.dataset.dimensions:
-                self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
-        # the case for search by mnemonics
-        if not self.mnemonics is None:
-            reader_with_mnemo = ReaderByMnemonics(self.client, self.dataset, self.dim_values, self.include_metadata, self.mnemonics, self.dimensions)
-            return reader_with_mnemo.get_pandasframe_by_mnemonics_in_one_dataset()
-        # the case of obtaining series by the selection 
-        if self.dataset.type == 'Regular':
-            reader_regular = ReaderBySelection(self.client, self.dataset, self.dim_values, self.include_metadata, self.mnemonics, self.dimensions)
-            return reader_regular.get_pandasframe_for_regular_dataset()
-        return self.get_pandasframe_for_flat_dataset()
+    def _get_dim_members(self, dim, splited_values):
 
-class ReaderBySelection(DataReader):
+        members = []
+        for value in splited_values:
+            if value is None:
+                raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
-    def __init__(self, client, dataset, dim_values, include_metadata, mnemonics, dimensions):
-        super().__init__(client, dataset, dim_values, include_metadata, mnemonics)
-        self.dimensions = dimensions
+            member = dim.find_member_by_id(value)
+            if member is None:
+                member = dim.find_member_by_name(value)
 
+            if member is None and value.isnumeric():
+                member = dim.find_member_by_key(int(value))
+
+            if member:
+                members.append(member.key)
+
+        return members    
+
+    def _find_dimension(self, dim_name_or_id):
+
+        dim = self.dataset.find_dimension_by_name(dim_name_or_id)
+        if dim is None:
+            dim = self.dataset.find_dimension_by_id(dim_name_or_id)
+
+        return dim
+
+    def _add_full_selection_by_empty_dim_values(self, filter_dims, pivot_req):
+        out_of_filter_dim_id = [dim.id for dim in self.dataset.dimensions if dim not in filter_dims]
+        for id in out_of_filter_dim_id:
+            pivot_req.stub.append(definition.PivotItem(id, []))
+
+    def _create_pivot_request(self):
+
+        pivot_req = definition.PivotRequest(self.dataset.id)
+
+        filter_dims = []
+        time_range = None
+        for name, value in self.dim_values.items():
+            if definition.is_equal_strings_ignore_case(name, 'timerange'):
+                time_range = value
+                continue
+
+            splited_values = value.split(';') if isinstance(value, str) else value
+            if definition.is_equal_strings_ignore_case(name, 'frequency'):
+                pivot_req.frequencies = splited_values
+                continue
+
+            dim = self._find_dimension(name)
+            if dim is None:
+                raise ValueError('Dimension with id or name {} is not found'.
+                                 format(name))
+
+            filter_dims.append(dim)
+
+            for dimension in self.dimensions:
+                if dimension.id == dim.id:
+                    dim = dimension
+                    break
+            members = self._get_dim_members(dim, splited_values)
+            if not members:
+                raise ValueError('Selection for dimension {} is empty'.format(dim.name))
+
+            pivot_req.stub.append(definition.PivotItem(dim.id, members))
+
+        self._add_full_selection_by_empty_dim_values(filter_dims, pivot_req)
+
+        if time_range:
+            pivot_req.header.append(definition.PivotTimeItem('Time', [time_range], 'range'))
+        else:
+            pivot_req.header.append(definition.PivotTimeItem('Time', [], 'AllData'))
+
+        return pivot_req    
+    
     def _get_series_name_for_streaming_api(self, series_point):
         names = []
         for dim in self.dimensions:
@@ -317,11 +279,41 @@ class ReaderBySelection(DataReader):
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
         return pandas_data_frame, pandas_data_frame_with_attr
 
-class ReaderByMnemonics(DataReader):
+    def get_pandasframe_for_flat_dataset(self):
+        pandas_series = {}
+        names_of_dimensions = self._get_dimension_names()
+        if self.include_metadata:
+            pandas_series_with_attr = {}
+            names_of_attributes = self._get_attribute_names()
 
-    def __init__(self, client, dataset, dim_values, include_metadata, mnemonics, dimensions):
-        super().__init__(client, dataset, dim_values, include_metadata, mnemonics)
-        self.dimensions = dimensions
+        pivot_req = self._create_pivot_request()
+        pivot_resp = self.client.get_data(pivot_req)
+        # create dataframe with data
+        series = self._get_data_series_for_pivot_api(pivot_resp)
+        pandas_series = self.creates_pandas_series(series, pandas_series)
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
+        if not self.include_metadata:
+            return pandas_data_frame
+            
+        # create dataframe with metadata
+        series_with_attr = self._get_metadata_series_for_pivot_api(pivot_resp, names_of_attributes)
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        return pandas_data_frame, pandas_data_frame_with_attr
+
+    def get_pandasframe(self):
+        for dim in self.dataset.dimensions:
+                self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+        if self.dataset.type == 'Regular':
+            return self.get_pandasframe_for_regular_dataset()
+        return self.get_pandasframe_for_flat_dataset()
+
+
+class MnemonicsDataReader(DataReader):
+
+    def __init__(self, client, mnemonics):
+        super().__init__(client)
+        self.mnemonics = mnemonics
 
     def _get_series_name_for_search_by_mnemonics(self, series_point):
         names = [series_point['Mnemonics']]
@@ -437,6 +429,16 @@ class ReaderByMnemonics(DataReader):
             return pandas_data_frame
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, [])         
         return pandas_data_frame, pandas_data_frame_with_attr
+
+    def get_pandasframe(self):
+        """The method loads data from dataset"""
+        if self.dataset:
+            for dim in self.dataset.dimensions:
+                self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+            return self.get_pandasframe_by_mnemonics_in_one_dataset()
+        else:
+            return self.get_pandasframe_by_mnemonics_in_all_datasets()
+
 
 class KnoemaSeries(object):
     """This class combines values and index points for one time series"""

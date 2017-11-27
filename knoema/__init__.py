@@ -4,7 +4,7 @@ from knoema.api_config import ApiConfig
 from knoema.api_client import ApiClient
 from knoema.data_reader import DataReader, ReaderByMnemonics
 
-def get(dataset = None, IncludeMetadata = False, mnemonics = None, **dim_values):
+def get(dataset = None, include_metadata = False, mnemonics = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
 
     if not dataset and not mnemonics:
@@ -20,11 +20,11 @@ def get(dataset = None, IncludeMetadata = False, mnemonics = None, **dim_values)
     client = ApiClient(config.host, config.app_id, config.app_secret)
     client.check_correct_host()
     if not dataset and mnemonics:     
-        reader_with_mnemo = ReaderByMnemonics(client, dataset, dim_values, IncludeMetadata, mnemonics, [])
+        reader_with_mnemo = ReaderByMnemonics(client, dataset, dim_values, include_metadata, mnemonics, [])
         return reader_with_mnemo.get_pandasframe_by_mnemonics_in_all_datasets()
       
     dataset = client.get_dataset(dataset)
-    data_reader = DataReader(client, dataset, dim_values, IncludeMetadata, mnemonics)
+    data_reader = DataReader(client, dataset, dim_values, include_metadata, mnemonics)
 
     return data_reader.get_pandasframe()
 

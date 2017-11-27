@@ -491,10 +491,9 @@ class TestKnoemaClient(unittest.TestCase):
     def test_search_by_mnemonics_data(self):
         """The method is testing searching by mnemonics"""
 
-        data_frame = knoema.get("eqohmpb", mnemonics="512NGDP_A_in_test_dataset")
+        data_frame = knoema.get('eqohmpb', mnemonics='512NGDP_A_in_test_dataset')
         self.assertEqual(data_frame.shape[1], 1)
-        self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
-        sname = ('Afghanistan','Gross domestic product, current prices','A')
+        sname = ('512NGDP_A_in_test_dataset')
         indx = data_frame.first_valid_index()
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 0)
@@ -502,17 +501,14 @@ class TestKnoemaClient(unittest.TestCase):
     def test_search_by_mnemonics_with_metadata(self):
         """The method is testing searching by mnemonics with metadata"""
 
-        data_frame, metadata = knoema.get("eqohmpb", True, mnemonics="512NGDP_A_in_test_dataset")
+        data_frame, metadata = knoema.get('eqohmpb', True, mnemonics='512NGDP_A_in_test_dataset')
         self.assertEqual(data_frame.shape[1], 1)
-        self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
-        sname = ('Afghanistan','Gross domestic product, current prices','A')
+        sname = ('512NGDP_A_in_test_dataset')
         indx = data_frame.first_valid_index()
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 0)
         self.assertEqual(metadata.shape[1], 1)
         self.assertEqual(metadata.shape[0], 5)
-        self.assertEqual(['Country', 'Indicator', 'Frequency'], metadata.columns.names)
-        sname = ('Afghanistan','Gross domestic product, current prices','A')
         self.assertEqual(metadata.get_value('Country Id',sname),'512')
         self.assertEqual(metadata.get_value('Indicator Id',sname),'NGDP')
         self.assertEqual(metadata.get_value('Unit',sname),'Number')       
@@ -520,7 +516,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_search_by_mnemonics_data_by_all_datasets(self):
         """The method is testing searching by mnemonics by all dataset and returns data"""
-        data_frame = knoema.get(mnemonics="512NGDP_A_in_test_dataset;512NGDP")
+        data_frame = knoema.get(mnemonics='512NGDP_A_in_test_dataset;512NGDP')
         self.assertEqual(data_frame.shape[1], 2)
         sname = ('512NGDP_A_in_test_dataset')
         indx = data_frame.first_valid_index()
@@ -529,7 +525,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_search_by_mnemonics_with_metadata_by_all_datasets(self):
         """The method is testing searching by mnemonics by all dataset and returns data and metadata"""
-        data_frame, metadata = knoema.get(None, True, mnemonics="512NGDP_A_in_test_dataset;512NGDP")
+        data_frame, metadata = knoema.get(None, True, mnemonics='512NGDP_A_in_test_dataset;512NGDP')
         self.assertEqual(data_frame.shape[1], 2)
         sname = ('512NGDP_A_in_test_dataset')
         indx = data_frame.first_valid_index()

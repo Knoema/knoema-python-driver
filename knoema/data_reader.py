@@ -110,6 +110,11 @@ class DataReader(object):
             pandas_data_frame.columns.names = names_of_dimensions
         return pandas_data_frame
 
+    def _load_dimensions(self):
+        for dim in self.dataset.dimensions:
+            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+    
+
 class SelectionDataReader(DataReader):
 
     def __init__(self, client, dim_values):
@@ -195,8 +200,7 @@ class PivotDataReader(SelectionDataReader):
         super().__init__(client, dim_values)
 
     def get_pandasframe(self):
-        for dim in self.dataset.dimensions:
-            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+        self._load_dimensions()
         pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
         if self.include_metadata:
@@ -291,8 +295,7 @@ class StreamingDataReader(SelectionDataReader):
         return series
 
     def get_pandasframe(self):
-        for dim in self.dataset.dimensions:
-            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+        self._load_dimensions()
         pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
         if self.include_metadata:
@@ -386,7 +389,6 @@ class MnemonicsDataReader(DataReader):
         mnemonics_string = ';'.join(self.mnemonics) if isinstance(self.mnemonics, list) else self.mnemonics
         mnemonics_resp = self.client.get_mnemonics(mnemonics_string)
 
-        dataset_list = []
         dict_datasets = {}
         dict_dimensions = {} 
         pandas_series = {}
@@ -398,8 +400,7 @@ class MnemonicsDataReader(DataReader):
             pivot_resp = item.pivot
             mnemonics = item.mnemonics
             dataset_id = pivot_resp.dataset
-            if dataset_id  not in dataset_list:
-                dataset_list.append(dataset_id)
+            if dataset_id  not in dict_datasets:
                 dataset = self.client.get_dataset(dataset_id)
                 self.dataset = dataset
                 dict_datasets[dataset_id] = dataset
@@ -434,8 +435,7 @@ class MnemonicsDataReader(DataReader):
     def get_pandasframe(self):
         """The method loads data from dataset"""
         if self.dataset:
-            for dim in self.dataset.dimensions:
-                self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+            self._load_dimensions()
             return self._get_pandasframe_one_dataset()
         return self._get_pandasframe_across_datasets()
 

@@ -151,7 +151,7 @@ An example of using the search for mnemonics::
     data_frame = knoema.get('dataset_id', mnemonics = 'mnemonic1;mnemonic2')
     data_frame, metadata = knoema.get('dataset_id',True, mnemonics = ['mnemonic1','mnemonic2'])
 
-if you are looking for mnemonics in several datasets at once or/and do not know their id, you can use this example::
+If you are downloading data by mnemonics without providing dataset id, you can use this example::
     data_frame = knoema.get(mnemonics = 'mnemonic1;mnemonic2')
     data_frame = knoema.get(None, mnemonics = 'mnemonic1;mnemonic2')
     data_frame, metadata = knoema.get(dataset = None, include_metadata = True, mnemonics = ['mnemonic1','mnemonic2'])

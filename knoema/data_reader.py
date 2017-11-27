@@ -22,7 +22,7 @@ class DataReader(object):
         names.append(series_point['Frequency'])
         return tuple(names) 
 
-    def _get_series_name_with_metadata(self, series_point):
+    def _get_series_with_metadata(self, series_point):
         names = []
         for dim in self.dimensions:
             for item in dim.items:
@@ -73,7 +73,7 @@ class DataReader(object):
                 continue
             serie_name = self._get_series_name(series_point)
             if serie_name not in series:
-                serie_attrs = self._get_series_name_with_metadata(series_point)
+                serie_attrs = self._get_series_with_metadata(series_point)
                 series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
         return series
 
@@ -117,7 +117,6 @@ class SelectionDataReader(DataReader):
         self.dim_values = dim_values
 
     def _get_dim_members(self, dim, splited_values):
-
         members = []
         for value in splited_values:
             if value is None:
@@ -189,20 +188,15 @@ class SelectionDataReader(DataReader):
             pivot_req.header.append(definition.PivotTimeItem('Time', [], 'AllData'))
 
         return pivot_req    
-    
-    
-        names = []
-        for dim in self.dimensions:
-            names.append(series_point[dim.id]['name'])
-        names.append(series_point['frequency'])
-        return tuple(names)
 
 class PivotDataReader(SelectionDataReader):
 
     def __init__(self, client, dim_values):
         super().__init__(client, dim_values)
 
-    def get_pandasframe_for_flat_dataset(self):
+    def get_pandasframe(self):
+        for dim in self.dataset.dimensions:
+            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
         pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
         if self.include_metadata:
@@ -224,11 +218,6 @@ class PivotDataReader(SelectionDataReader):
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
         return pandas_data_frame, pandas_data_frame_with_attr
 
-    def get_pandasframe(self):
-        for dim in self.dataset.dimensions:
-            self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
-        return self.get_pandasframe_for_flat_dataset()
-
 class StreamingDataReader(SelectionDataReader):
 
     def __init__(self, client, dim_values):
@@ -241,7 +230,7 @@ class StreamingDataReader(SelectionDataReader):
         names.append(series_point['frequency'])
         return tuple(names)
 
-    def _get_series_name_with_metadata(self, series_point):
+    def _get_series_with_metadata(self, series_point):
         names = []
         for dim in self.dimensions:
             for item in dim.items:
@@ -265,7 +254,7 @@ class StreamingDataReader(SelectionDataReader):
         for series_point in resp.series:
             serie_name = self._get_series_name(series_point)
             if serie_name not in series:
-                serie_attrs = self._get_series_name_with_metadata(series_point)
+                serie_attrs = self._get_series_with_metadata(series_point)
                 series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
         return series  
 
@@ -323,28 +312,6 @@ class StreamingDataReader(SelectionDataReader):
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
         return pandas_data_frame, pandas_data_frame_with_attr
 
-
-        pandas_series = {}
-        names_of_dimensions = self._get_dimension_names()
-        if self.include_metadata:
-            pandas_series_with_attr = {}
-            names_of_attributes = self._get_attribute_names()
-
-        pivot_req = self._create_pivot_request()
-        pivot_resp = self.client.get_data(pivot_req)
-        # create dataframe with data
-        series = self._get_data_series(pivot_resp)
-        pandas_series = self.creates_pandas_series(series, pandas_series)
-        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
-        if not self.include_metadata:
-            return pandas_data_frame
-            
-        # create dataframe with metadata
-        series_with_attr = self._get_metadata_series(pivot_resp, names_of_attributes)
-        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
-        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
-        return pandas_data_frame, pandas_data_frame_with_attr
-
     def get_pandasframe(self):
         for dim in self.dataset.dimensions:
             self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
@@ -364,7 +331,7 @@ class MnemonicsDataReader(DataReader):
                 continue
             serie_name = series_point['Mnemonics']
             if serie_name not in series:
-                serie_attrs = self._get_series_name_with_metadata(series_point)
+                serie_attrs = self._get_series_with_metadata(series_point)
                 series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
         return series  
 

@@ -200,7 +200,7 @@ class MnemonicsResponse(object):
 
     def __init__(self,data):
         self.mnemonics = data['mnemonics']
-        self.pivot = PivotResponse(data['pivot'])
+        self.pivot = None if data['pivot'] is None else PivotResponse(data['pivot'])
 
 class FileProperties(object):
     """The class contains response from upload post request"""

@@ -398,6 +398,8 @@ class MnemonicsDataReader(DataReader):
 
         for item in mnemonics_resp.items:
             pivot_resp = item.pivot
+            if pivot_resp is None:
+                continue
             mnemonics = item.mnemonics
             dataset_id = pivot_resp.dataset
             if dataset_id  not in dict_datasets:

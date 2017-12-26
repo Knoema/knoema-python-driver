@@ -11,6 +11,8 @@ class TestKnoemaClient(unittest.TestCase):
     def setUp(self):
         apicfg = knoema.ApiConfig()
         apicfg.host = 'knoema.com'
+        apicfg.app_id = 'bHcV5UkOVyKcBw'
+        apicfg.app_secret='/0itYgLqnD0i49kmdBVSZ1qLjPU'
 
     def test_getdata_singleseries_by_member_id(self):
         """The method is testing getting single series by dimension member ids"""

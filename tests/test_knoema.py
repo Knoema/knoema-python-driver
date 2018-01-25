@@ -143,14 +143,6 @@ class TestKnoemaClient(unittest.TestCase):
 
         self.assertTrue('Dataset id is not specified' in str(context.exception))       
 
-    def test_no_selection(self):
-        """The method is testing if there is no dimensions specified"""
-
-        with self.assertRaises(ValueError) as context:
-            knoema.get('IMFWEO2017Apr')
-
-        self.assertTrue('Dimensions members are not specified' in str(context.exception))
-
     def test_wrong_dimension(self):
         """The method is testing if there is wrong dimension name is specified"""
    
@@ -537,3 +529,14 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.get_value('Indicator Id',sname),'NGDP')
         self.assertEqual(metadata.get_value('Unit',sname),'Number')       
         self.assertEqual(metadata.get_value('Mnemonics',sname),'512NGDP_A_in_test_dataset')  
+    
+    def test_get_all_series_from_dataset(self):
+        """The method is testing getting all series from dataset"""
+        data_frame= knoema.get('eqohmpb')
+        self.assertEqual(data_frame.shape[1], 14)
+        self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
+
+        indx = data_frame.first_valid_index()
+        sname = ('Afghanistan', 'Gross domestic product, current prices', 'M')
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 26.02858277)

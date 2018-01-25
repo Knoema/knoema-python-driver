@@ -10,9 +10,6 @@ def get(dataset = None, include_metadata = False, mnemonics = None, **dim_values
     if not dataset and not mnemonics:
         raise ValueError('Dataset id is not specified')
 
-    if dataset and not mnemonics and not dim_values:
-        raise ValueError('Dimensions members are not specified')
-
     if mnemonics and dim_values:
         raise ValueError('The function does not support specifying mnemonics and selection in a single call')
 

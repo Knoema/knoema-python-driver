@@ -41,30 +41,30 @@ There are one method for retrieving series from datasets in Python: the **get** 
 The following quick call can be used to retrieve a timeserie from dataset::
 
    import knoema
-   data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
+   data_frame = knoema.get('IMFWEO2017Oct', country='914', subject='ngdp')
 
 where:
 
-* 'IMFWEO2017Apr' this is a public dataset, that available for all users by reference https://knoema.com/IMFWEO2017Apr.
+* 'IMFWEO2017Oct' this is a public dataset, that available for all users by reference https://knoema.com/IMFWEO2017Oct.
 * country and subject are dimensions names
 * '914' is id of country *Albania*
 * 'ngdp' is id of subject *Gross domestic product, current prices (U.S. dollars)*
 
-This example finds all data points for the dataset IMFWEO2017Apr with selection by country = *Albania* and subject =  *Gross domestic product, current prices (U.S. dollars)* and stores this series in a pandas dataframe. You can then view the dataframe with operations *data_frame.head()* or *print(date_frame)*
+This example finds all data points for the dataset IMFWEO2017Oct with selection by country = *Albania* and subject =  *Gross domestic product, current prices (U.S. dollars)* and stores this series in a pandas dataframe. You can then view the dataframe with operations *data_frame.head()* or *print(date_frame)*
 
 If some dimension is not specified, the method will consider all the elements in this dimension. Example::
 
-    data_frame = knoema.get('IMFWEO2017Apr', subject = 'flibor6')
+    data_frame = knoema.get('IMFWEO2017Oct', subject = 'flibor6')
 
 For multiple selection you can use the next examples::
   
     import knoema
-    data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp')
+    data_frame = knoema.get('IMFWEO2017Oct', country='914;512;111', subject='lp;ngdp')
 
 or::
 
     import knoema
-    data_frame = knoema.get('IMFWEO2017Apr', country=['914','512','111'], subject=['lp','ngdp'])
+    data_frame = knoema.get('IMFWEO2017Oct', country=['914','512','111'], subject=['lp','ngdp'])
 
 
 For case when the dimensions of dataset that have multi word names use the next example::
@@ -82,7 +82,7 @@ For case when the dimensions of dataset that have multi word names use the next 
 In addition to the required using of the selections for dimensions, you can additionally specify the period and frequencies in the parameters. For more details, see the example below::
 
     import knoema
-    data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp', frequency='A', timerange='2007-2017')
+    data_frame = knoema.get('IMFWEO2017Oct', country='914;512;111', subject='lp;ngdp', frequency='A', timerange='2007-2017')
 
 ******************************************************
 Retrieving series from datasets including metadata
@@ -90,7 +90,7 @@ Retrieving series from datasets including metadata
 By default the function knoema.get returns the one dataframe with data. If you want also get information about metadata(attributes, unit, scale, mnemonics), include the additional parameter in your function, like this::
 
      import knoema
-     data, metadata = knoema.get('IMFWEO2017Apr', True, country=['914','512'], subject='lp')
+     data, metadata = knoema.get('IMFWEO2017Oct', True, country=['914','512'], subject='lp')
      
 The function, in this case, returns two dataframes - one with data, second with metadata.    
 
@@ -166,34 +166,23 @@ Example::
 
     knoema.get(None)
 
-2. "ValueError:  Dimensions members are not specified"
-
-This error appears when you don't set selection.
-Examples::
-
-    knoema.get('IMFWEO2017Apr')
-    knoema.get('IMFWEO2017Apr',123)
-    knoema.get('IMFWEO2017Apr',"string")
-    knoema.get('IMFWEO2017Apr',True)
-    knoema.get('IMFWEO2017Apr',**{})
-
-3. "ValueError: Dimension with id or name some_name_of_dimension is not found"
+2. "ValueError: Dimension with id or name some_name_of_dimension is not found"
 
 This error appears when you use name that doesn't correspond to any existing dimensions' names or ids.
 Examples::
 
-    knoema.get('IMFWEO2017Apr', dimension_not_exist='914', subject='lp')
-    knoema.get('IMFWEO2017Apr', **{'dimension not exist':'914', 'subject':'lp'})
+    knoema.get('IMFWEO2017Oct', dimension_not_exist='914', subject='lp')
+    knoema.get('IMFWEO2017Oct', **{'dimension not exist':'914', 'subject':'lp'})
 
-4. "ValueError: Selection for dimension dimension_name is empty"
+3 "ValueError: Selection for dimension dimension_name is empty"
 
 This error appears when you use empty selection for dimension or all specified elements don't exist.
 Examples::
 
-    knoema.get('IMFWEO2017Apr', country ='', subject='lp')
-    knoema.get('IMFWEO2017Apr', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
+    knoema.get('IMFWEO2017Oct', country ='', subject='lp')
+    knoema.get('IMFWEO2017Oct', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
 
-5. "ValueError: Requested dataset doesn't exist or you don't have access to it"
+4. "ValueError: Requested dataset doesn't exist or you don't have access to it"
 
 This error appears when you use dataset that doesn't exist or you don't have access rights to it.
 Example::
@@ -202,20 +191,20 @@ Example::
 
 This dataset doesn't exist. If your dataset exist, and you have access to it, check that you set api_config with app_id and app_secret.
 
-6. "ValueError: "Underlying data is very large. Can't create visualization"
+5. "ValueError: "Underlying data is very large. Can't create visualization"
 
 This error appears when you use a big selection. Try to decrease the selection.
 
-7. "The specified host incorect_host doesn't exist"
+6. "The specified host incorect_host doesn't exist"
 
 This error appears when you use host that doesn't exist.
 Example::
 
     apicfg = knoema.ApiConfig()
     apicfg.host = 'knoema_incorect.com'
-    data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
+    data_frame = knoema.get('IMFWEO2017Oct', country='914', subject='ngdp')
 
-8. "HTTPError:  HTTP Error 400: Bad Request"
+7. "HTTPError:  HTTP Error 400: Bad Request"
 
 This error appears when you try to delete dataset that doesn't exist or you don't have access rights to it.
 Example::
@@ -224,35 +213,35 @@ Example::
 
 If you have access to it, check that you set api_config with app_id and app_secret.
 
-9. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 50"
+8. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 50"
 
 This error appears when you use public user (api_config without app_id and app_secret parameters set) and reached the limit of requests.
 You can avoid this error, using api_config with app_id and app_secret.
 
-10. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 500"
+9. "HTTPError: HTTP Error 403: The number of requests for /api/meta/dataset/datasetId/dimension/dimensionId exceeds 500"
 
 This error appears when you use api_config with app_id and app_secret parameters set, and reached the limit of requests.
 You can avoid this error, using other parameters app_id and app_secret.
 
-11. "HTTPError: HTTP Error 403: invalid REST authentication credentials"
+10. "HTTPError: HTTP Error 403: invalid REST authentication credentials"
 
 This error appears when you try to use api_config with app_id and app_secret, but they are incorrect. 
 You can avoid this error, using other parameters app_id and app_secret.
 
-12. "AttributeError: 'str' object has no attribute 'strftime'"
+11. "AttributeError: 'str' object has no attribute 'strftime'"
 
 This error appears when you use string data instead datetime.
 Example::
 
-    knoema.verify('IMFWEO2017Apr','2017-5-7','IMF','http://knoema.com')
+    knoema.verify('IMFWEO2017Oct','2017-5-7','IMF','http://knoema.com')
 
 You can avoid this error using datetime instead string date.
 Example::
 
-    knoema.verify('IMFWEO2017Apr',datetime(2017,5,7),'IMF','http://knoema.com')
+    knoema.verify('IMFWEO2017Oct',datetime(2017,5,7),'IMF','http://knoema.com')
 
-13. "ValueError: The function does not support the simultaneous use of mnemonic and selection"
+12. "ValueError: The function does not support the simultaneous use of mnemonic and selection"
 This error appears when you use mnemonics and selection in one query.
 Example::
-    knoema.get('IMFWEO2017Apr', mnemonics = 'some_mnemonic', country ='912', subject='lp')
+    knoema.get('IMFWEO2017Oct', mnemonics = 'some_mnemonic', country ='912', subject='lp')
     knoema.get(None, mnemonics = 'some_mnemonic', country = 'USA')

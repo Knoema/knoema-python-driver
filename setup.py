@@ -7,7 +7,7 @@ def readme():
 setup(
   name = 'knoema',
   packages = ['knoema'],
-  version = '1.0.12b1',
+  version = '1.0.13b1',
   description = "Official Python package for Knoema's API",
   long_description=readme(),
   author = 'Knoema',

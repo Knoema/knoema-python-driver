@@ -41,6 +41,7 @@ class ApiClient:
         self._host = host
         self._appid = appid
         self._appsecret = appsecret
+        self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor)
 
     def _get_url(self, apipath):
         return 'http://{}{}'.format(self._host, apipath)
@@ -68,7 +69,7 @@ class ApiClient:
 
         headers = self._get_request_headers()
         req = urllib.request.Request(url, headers=headers)
-        resp = urllib.request.urlopen(req)
+        resp = self._opener.open(req)
         return obj(_response_to_json(resp))
 
     def _api_post(self, responseobj, apipath, requestobj):
@@ -80,7 +81,7 @@ class ApiClient:
 
         headers = self._get_request_headers()
         req = urllib.request.Request(url, binary_data, headers)
-        resp = urllib.request.urlopen(req)
+        resp = self._opener.open(req)
         return responseobj(_response_to_json(resp))
 
     def check_correct_host(self):

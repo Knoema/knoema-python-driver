@@ -242,10 +242,16 @@ class StreamingDataReader(SelectionDataReader):
                     dim_attrs = item.fields
                     break
             for attr in dim.fields: 
+                find_elem = False
                 if not attr['isSystemField']: 
                     for key, value in dim_attrs.items(): 
                         if definition.is_equal_strings_ignore_case(key, attr['name']):
+                            find_elem = True
                             names.append(value)
+                            break
+                    if not find_elem:
+                        names.append(None)        
+
         names.append(series_point.get('unit'))
         names.append(series_point.get('scale'))
         names.append(series_point.get('mnemonics'))

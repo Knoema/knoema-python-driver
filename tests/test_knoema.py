@@ -540,3 +540,28 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Afghanistan', 'Gross domestic product, current prices', 'M')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 26.02858277)
+
+    def test_with_empty_attributes_in_the_dimensions(self):
+        data, metadata = knoema.get('IMFWEO2017Oct', include_metadata=True, country=['914','512'], subject='lp')
+        self.assertEqual(data.shape[0], 43)
+        self.assertEqual(data.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data.columns.names)
+        self.assertEqual(metadata.shape[0], 8)
+        self.assertEqual(metadata.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
+        indx = data.first_valid_index()
+        sname = ('Albania', 'Population (Persons)', 'A')
+        value = data.get_value(indx, sname)
+        self.assertEqual(value, 2.762)
+        
+        self.assertEqual(metadata.get_value('Country Id',sname),'914')
+        self.assertEqual(metadata.get_value('Subject Id',sname),'LP')
+        self.assertEqual(metadata.get_value('Subject SubjectDescription',sname),None)
+        self.assertEqual(metadata.get_value('Subject SubjectNotes',sname),None)
+        self.assertEqual(metadata.get_value('Subject Relevant',sname),None)
+        self.assertEqual(metadata.get_value('Unit',sname),'Persons (Millions)')       
+        self.assertEqual(metadata.get_value('Mnemonics',sname),None)
+
+        indx = data.last_valid_index()
+        value = data.get_value(indx, sname)
+        self.assertEqual(value, 2.856)

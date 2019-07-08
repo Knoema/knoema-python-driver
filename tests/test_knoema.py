@@ -294,7 +294,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is negative test on dataset verification"""
 
         with self.assertRaises(ValueError) as context:
-            knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
+            knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.com/')
         self.assertTrue("Dataset has not been verified, because of the following error(s): Requested dataset doesn't exist or you don't have access to it." in str(context.exception))
 
     def test_include_metadata_true(self):
@@ -451,7 +451,7 @@ class TestKnoemaClient(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
-            knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.gic.com.sg/')
+            knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.com')
         self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))    
 
 

@@ -243,5 +243,6 @@ Example::
 12. "ValueError: The function does not support the simultaneous use of mnemonic and selection"
 This error appears when you use mnemonics and selection in one query.
 Example::
+
     knoema.get('IMFWEO2017Oct', mnemonics = 'some_mnemonic', country ='912', subject='lp')
     knoema.get(None, mnemonics = 'some_mnemonic', country = 'USA')

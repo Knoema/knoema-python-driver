@@ -8,5 +8,6 @@
     ],
     "python.unitTest.unittestEnabled": true,
     "python.unitTest.pyTestEnabled": false,
-    "python.unitTest.nosetestsEnabled": false
+    "python.unitTest.nosetestsEnabled": false,
+    "restructuredtext.confPath": ""
 }

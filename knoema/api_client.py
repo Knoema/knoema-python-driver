@@ -89,7 +89,8 @@ class ApiClient:
         if self._host == 'knoema.com':
             return
         url = self._get_url('/api/1.0/frontend/tags')
-        req = urllib.request.Request(url)
+        headers = self._get_request_headers()
+        req = urllib.request.Request(url, headers=headers)
         try:
             resp = urllib.request.urlopen(req)
         except:

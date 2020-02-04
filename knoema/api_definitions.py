@@ -92,6 +92,7 @@ class Dataset(object):
         self.type = data['type']
         self.dimensions = [DimensionModel(dim) for dim in data['dimensions']]
         self.timeseries_attributes = [TimeSeriesAttribute(attr) for attr in data['timeseriesAttributes']] if 'timeseriesAttributes' in data else []
+        self.has_time = self.type == 'Regular' or any(x for x in data['columns'] if x['type'] == 'Date')
             
     def find_dimension_by_name(self, dim_name):
         """the method searching dimension with a given name"""
@@ -109,13 +110,27 @@ class Dataset(object):
                 return dim
         return None
 
+class PivotItemMetadata(object):
+#SimpleDimensionMember
+    """The class contains metadata fields for pivot request item"""
+    def __init__(self, key, name, parent=None, fields=None):
+        self.key = key
+        self.name = name
+        self.parent = parent
+        self.fields = fields
 
 class PivotItem(object):
     """The class contains pivot request item"""
 
-    def __init__(self, dimensionid=None, members=None):
+    def __init__(self, dimensionid=None, members=None, metadataFields=None, dimensionFields=None):
         self.dimensionid = dimensionid
         self.members = members
+        if metadataFields:
+            self.metadataFields = [PivotItemMetadata(metadata['key'], metadata['name'],
+                metadata['parent'], metadata['fields']) for metadata in metadataFields]
+        else:
+            self.metadataFields = None
+        self.fields = dimensionFields
 
 
 class PivotTimeItem(PivotItem):
@@ -169,17 +184,20 @@ class PivotResponse(object):
 
         self.header = []
         for item in data['header']:
-            self.header.append(PivotItem(item['dimensionId'], item['members']))
+            self.header.append(self._construct_dimension(item))
 
         self.stub = []
         for item in data['stub']:
-            self.stub.append(PivotItem(item['dimensionId'], item['members']))
+            self.stub.append(self._construct_dimension(item))
 
         self.filter = []
         for item in data['filter']:
-            self.filter.append(PivotItem(item['dimensionId'], item['members']))
+            self.filter.append(self._construct_dimension(item))
 
         self.tuples = data['data']
+
+    def _construct_dimension(self, item):
+        return PivotItem(item['dimensionId'], item['members'], item['metadataFields'], item['dimensionFields'] if 'dimensionFields' in item else None)
 
 class RawDataResponse(object):
     """The class contains raw data response"""

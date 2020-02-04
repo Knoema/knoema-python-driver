@@ -94,6 +94,42 @@ By default the function knoema.get returns the one dataframe with data. If you w
      
 The function, in this case, returns two dataframes - one with data, second with metadata.    
 
+********************
+Data Transformation
+********************
+You can use transform parameter to apply transformation to requested data, like this::
+
+
+   import knoema
+   data_frame = knoema.get('IMFWEO2017Oct', country='914', subject='ngdp', transform='PCH')
+
+The supported values of transform parameter are the following:
+
+* PCH – % Change, a change from the previous month
+* PCHY – % Change from a year ago, a change from the same month of the previous year 
+* PCHA – % Change, annualized, a change from the previous month raised by 12 in the case of monthly data, and by 4 in the case of quarterly data.
+* DIFF – Change, an absolute change from the previous month which represents value in the current month minus the value in the previous month.
+* DIFFY – Change from a year ago
+* DIFFA – Change, YTD
+* DIFFYTD – Change, YTD (year to date), an absolute change from the beginning of the year
+* DLOG – Log difference, the difference of natural logarithms of the current and previous period which is equivalent to the % change.
+* DLOGY – Log Difference from a year ago
+* DLOGYTD – Log Difference, YTD
+* YTD – Year to date, the sum of values since the start of the year.
+* ABS - the function that returns the absolute value of a number.
+
+In order to get requested data normalized to specific frequency, you can specify frequency parameter, like this::
+
+    import knoema
+    data_frame = knoema.get('IMFWEO2017Oct', country='914;512;111', subject='lp;ngdp', frequency='M')
+
+When the frequency of time-series is different from the value of Frequency parameter aggregation/disaggregation of data is performed.
+
+For datasets with several date columns you can specify particular column with datecolumn parameter, like this::
+
+    import knoema
+    data_frame = knoema.get('bjxchy', country='Albania', measure='Original Principal Amount ($)', datecolumn='Effective Date (Most Recent)', timerange='2010-2015', frequency='A')
+    
 ******************
 Uploading Dataset
 ******************
@@ -174,13 +210,13 @@ Examples::
     knoema.get('IMFWEO2017Oct', dimension_not_exist='914', subject='lp')
     knoema.get('IMFWEO2017Oct', **{'dimension not exist':'914', 'subject':'lp'})
 
-3 "ValueError: Selection for dimension dimension_name is empty"
+3. "ValueError: Selection for dimension dimension_name is empty"
 
-This error appears when you use empty selection for dimension or all specified elements don't exist.
+This error appears when you use empty selection for dimension .
 Examples::
 
     knoema.get('IMFWEO2017Oct', country ='', subject='lp')
-    knoema.get('IMFWEO2017Oct', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
+    knoema.get('IMFWEO2017Oct', **{'country':'914', 'subject':''})
 
 4. "ValueError: Requested dataset doesn't exist or you don't have access to it"
 
@@ -246,3 +282,11 @@ Example::
 
     knoema.get('IMFWEO2017Oct', mnemonics = 'some_mnemonic', country ='912', subject='lp')
     knoema.get(None, mnemonics = 'some_mnemonic', country = 'USA')
+
+13. "ValueError: Selection for dimension dimension_name contains invalid elements"
+
+This error appears when any of the specified elements don't exist.
+Examples::
+
+    knoema.get('IMFWEO2017Oct', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
+

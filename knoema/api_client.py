@@ -13,6 +13,7 @@ import string
 import io
 import os
 import knoema.api_definitions as definition
+from urllib.error import HTTPError
 
 def _random_string(length):
     return ''.join(random.choice(string.ascii_letters) for ii in range(length + 1))
@@ -57,7 +58,10 @@ class ApiClient:
     def _get_request_headers(self):
 
         if not self._appid or not self._appsecret:
-            return {'Content-Type' : 'application/json'}
+            return {
+                'Content-Type' : 'application/json',
+                'Accept': 'application/json'
+                }
 
         key = datetime.datetime.utcnow().strftime('%d-%m-%y-%H').encode()
         hashed = hmac.new(key, self._appsecret.encode(), hashlib.sha1)
@@ -66,6 +70,7 @@ class ApiClient:
 
         return {
             'Content-Type' : 'application/json',
+            'Accept': 'application/json',
             'Authorization' : auth
             }
 
@@ -128,6 +133,16 @@ class ApiClient:
         path = '/api/1.0/data/pivot/'
         return self._api_post(definition.PivotResponse, path, pivotrequest)
 
+    def get_dataset_data(self, dataset_id, query):
+        """The method is getting JSON by URL and parses it to specified object"""
+        try:
+            return self._api_get(definition.PivotResponse, '/api/1.2/data/{}'.format(dataset_id), query)
+        except HTTPError as ex:
+            if ex.code == 400:
+                raise ValueError(ex.read().decode('utf-8'))
+            else:
+                raise
+
     def get_data_raw(self, request):
         """The method is getting data by raw request"""
         path = '/api/1.0/data/raw/'
@@ -143,9 +158,13 @@ class ApiClient:
         path = '/api/1.0/data/raw/?continuationToken={0}'
         return self._api_get(definition.RawDataResponse, path.format(token))
 
-    def get_mnemonics (self, mnemonics):
+    def get_mnemonics (self, mnemonics, transform, frequency):
         """The method get series by mnemonics"""
         path = '/api/1.0/data/mnemonics?mnemonics={0}'
+        if transform:
+            path += '&transform=' + transform
+        if frequency:
+            path += '&frequency=' + frequency
         return self._api_get(definition.MnemonicsResponseList, path.format(mnemonics))
 
     def upload_file(self, file):

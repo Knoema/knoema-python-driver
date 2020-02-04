@@ -12,6 +12,8 @@ import string
 import io
 import os
 import knoema.api_definitions as definition
+import sys
+import ssl
 
 def _random_string(length):
     return ''.join(random.choice(string.ascii_letters) for ii in range(length + 1))
@@ -41,10 +43,13 @@ class ApiClient:
         self._host = host
         self._appid = appid
         self._appsecret = appsecret
-        self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor, urllib.request.HTTPSHandler(context=ctx))
 
     def _get_url(self, apipath):
-        return 'http://{}{}'.format(self._host, apipath)
+        return 'https://{}{}'.format(self._host, apipath)
 
     def _get_request_headers(self):
 
@@ -61,13 +66,16 @@ class ApiClient:
             'Authorization' : auth
             }
 
-    def _api_get(self, obj, apipath, query=None):
+    def _api_get(self, obj, apipath, query=None, additional_headers={}):
 
         url = self._get_url(apipath)
         if query:
             url = '{}?{}'.format(url, query)
 
         headers = self._get_request_headers()
+        for k, v in additional_headers.items():
+            headers[k] = v
+
         req = urllib.request.Request(url, headers=headers)
         resp = self._opener.open(req)
         return obj(_response_to_json(resp))
@@ -92,7 +100,10 @@ class ApiClient:
         headers = self._get_request_headers()
         req = urllib.request.Request(url, headers=headers)
         try:
-            resp = urllib.request.urlopen(req)
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            resp = urllib.request.urlopen(req, context=ctx)
         except:
             raise ValueError('The specified host {} does not exist'.format(self._host))  
 
@@ -120,6 +131,11 @@ class ApiClient:
         path = '/api/1.0/data/pivot/'
         return self._api_post(definition.PivotResponse, path, pivotrequest)
 
+    def get_json(self, obj, url):
+        """The method is getting JSON by URL and parses it to specified object"""
+
+        return self._api_get(obj, url, additional_headers={'Accept': 'application/json'})
+
     def get_data_raw(self, request):
         """The method is getting data by raw request"""
         path = '/api/1.0/data/raw/'
@@ -135,9 +151,11 @@ class ApiClient:
         path = '/api/1.0/data/raw/?continuationToken={0}'
         return self._api_get(definition.RawDataResponse, path.format(token))
 
-    def get_mnemonics (self, mnemonics):
+    def get_mnemonics (self, mnemonics, transform):
         """The method get series by mnemonics"""
         path = '/api/1.0/data/mnemonics?mnemonics={0}'
+        if transform:
+            path += '&transform=' + transform
         return self._api_get(definition.MnemonicsResponseList, path.format(mnemonics))
 
     def upload_file(self, file):

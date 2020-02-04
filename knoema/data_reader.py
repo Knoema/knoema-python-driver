@@ -5,6 +5,7 @@ from dateutil.relativedelta import relativedelta
 
 import pandas
 import knoema.api_definitions as definition
+from urllib.parse import quote
 
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""
@@ -87,11 +88,14 @@ class DataReader(object):
             if series_name not in series:
                 series[series_name] = KnoemaSeries(series_name,[],[])
 
-            curr_date_val = series_point['Time']
-            try:
-                curr_date_val = datetime.strptime(series_point['Time'], '%Y-%m-%dT%H:%M:%SZ')
-            except ValueError:
-                pass
+            if 'Time' in series_point:
+                curr_date_val = series_point['Time']
+                try:
+                    curr_date_val = datetime.strptime(series_point['Time'], '%Y-%m-%dT%H:%M:%SZ')
+                except ValueError:
+                    pass
+            else:
+                curr_date_val = 'All time'
 
             if (series_point['Frequency'] == "W"):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
@@ -222,6 +226,75 @@ class PivotDataReader(SelectionDataReader):
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
         return pandas_data_frame, pandas_data_frame_with_attr
 
+class TransformationDataReader(SelectionDataReader):
+
+    def __init__(self, client, dim_values, transform):
+        if transform:
+            dim_values['transform'] = transform
+        super().__init__(client, dim_values)
+
+    def get_pandasframe(self):
+        pandas_series = {}
+        names_of_dimensions = self._get_dimension_names()
+        if self.include_metadata:
+            self._load_dimensions()
+            pandas_series_with_attr = {}
+            names_of_attributes = self._get_attribute_names()
+
+        data_url = self._get_data_url()
+        pivot_resp = self.client.get_json(definition.PivotResponse, data_url)
+        # create dataframe with data
+        series = self._get_data_series(pivot_resp)
+        pandas_series = self.creates_pandas_series(series, pandas_series)
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
+        if not self.include_metadata:
+            return pandas_data_frame
+            
+        # create dataframe with metadata
+        series_with_attr = self._get_metadata_series(pivot_resp, names_of_attributes)
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        return pandas_data_frame, pandas_data_frame_with_attr
+
+    def _get_dimension_names(self):
+        names = []
+        for dim in self.dataset.dimensions:
+            names.append(dim.name)
+        names.append('Frequency')             
+        return names   
+
+    def _get_series_name(self, series_point):
+        names = []
+        for dim in self.dataset.dimensions:
+            if dim.id in series_point:
+                names.append(series_point[dim.id])
+        names.append(series_point['Frequency'])
+        return tuple(names) 
+
+    def _get_data_url(self):
+        filter_dims = {}
+        passed_params = ['timerange', 'transform', 'datecolumn']
+
+        for name, value in self.dim_values.items():
+            if name.lower() in passed_params:
+                filter_dims[name] = value
+                continue
+
+            splited_values = value.split(';') if isinstance(value, str) else value
+            if definition.is_equal_strings_ignore_case(name, 'frequency'):
+                filter_dims["frequency"] = ",".join(splited_values)
+                continue
+
+            dim = self._find_dimension(name)
+            if dim is None:
+                raise ValueError('Dimension with id or name {} is not found'.
+                                 format(name))
+
+            filter_dims[dim.id] =  ",".join(quote(s) for s in splited_values)
+
+        url = "/" + self.dataset.id + "?" + "&".join("=".join((str(key), str(value))) for key, value in filter_dims.items())
+        return url
+
 class StreamingDataReader(SelectionDataReader):
 
     def __init__(self, client, dim_values):
@@ -325,9 +398,10 @@ class StreamingDataReader(SelectionDataReader):
 
 class MnemonicsDataReader(DataReader):
 
-    def __init__(self, client, mnemonics):
+    def __init__(self, client, mnemonics, transform):
         super().__init__(client)
         self.mnemonics = mnemonics
+        self.transform = transform
 
     def _get_metadata_series(self, resp, names_of_attributes):
         series = {}
@@ -370,7 +444,7 @@ class MnemonicsDataReader(DataReader):
 
         mnemonics = self.mnemonics
         mnemonics_string = ';'.join(mnemonics) if isinstance(mnemonics, list) else mnemonics
-        mnemonics_resp = self.client.get_mnemonics(mnemonics_string)
+        mnemonics_resp = self.client.get_mnemonics(mnemonics_string, self.transform)
             
         for item in mnemonics_resp.items:
             pivot_resp = item.pivot

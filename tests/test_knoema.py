@@ -10,7 +10,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def setUp(self):
         apicfg = knoema.ApiConfig()
-        apicfg.host = 'knoema.com'
+        apicfg.host = 'knoema.org'
         apicfg.app_id = 'FzOYqDg'
         apicfg.app_secret='SPrvmY8eGRcGA'
 
@@ -230,7 +230,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 1)
         self.assertEqual(data_frame.shape[1], 1)
 
-        sname = ('Airports', 'Bakel Airport', 'D')
+        sname = ('Airports', 'Bakel Airport', '')
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 1.0)
 
@@ -238,7 +238,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing if dataset id set up incorrectly"""
 
         with self.assertRaises(ValueError) as context:
-            knoema.get('incorrect id', somedim='val1;val2')
+            knoema.get('incorrect_id', somedim='val1;val2')
 
         self.assertTrue("Requested dataset doesn't exist or you don't have access to it." in str(context.exception))
 
@@ -408,7 +408,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.shape[0], 5)
         self.assertEqual(metadata.shape[1], 1)
 
-        sname = ('Airports', 'Bakel Airport', 'D')
+        sname = ('Airports', 'Bakel Airport', '')
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 1.0)   
         self.assertEqual(metadata.get_value('Object Name Latitude',sname),'14.847256')

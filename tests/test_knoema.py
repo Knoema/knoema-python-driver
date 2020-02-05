@@ -411,8 +411,8 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Airports', 'Bakel Airport', '')
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 1.0)   
-        self.assertEqual(metadata.get_value('Object Name Latitude',sname),'14.847256')
-        self.assertEqual(metadata.get_value('Object Name Longitude',sname),'-12.468264')
+        self.assertEqual(metadata.get_value('Object Name latitude',sname),'14.847256')
+        self.assertEqual(metadata.get_value('Object Name longitude',sname),'-12.468264')
 
         self.assertEqual(metadata.get_value('Scale',sname),1)
         self.assertEqual(metadata.get_value('Unit',sname),'# of records')

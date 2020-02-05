@@ -109,13 +109,26 @@ class Dataset(object):
                 return dim
         return None
 
+class PivotItemMetadata(object):
+#SimpleDimensionMember
+    """The class contains metadata fields for pivot request item"""
+    def __init__(self, key, name, parent=None, fields=None):
+        self.key = key
+        self.name = name
+        self.parent = parent
+        self.fields = fields
 
 class PivotItem(object):
     """The class contains pivot request item"""
 
-    def __init__(self, dimensionid=None, members=None):
+    def __init__(self, dimensionid=None, members=None, metadataFields=None):
         self.dimensionid = dimensionid
         self.members = members
+        if metadataFields:
+            self.metadataFields = [PivotItemMetadata(metadata['key'], metadata['name'],
+                metadata['parent'], metadata['fields']) for metadata in metadataFields]
+        else:
+            self.metadataFields = None
 
 
 class PivotTimeItem(PivotItem):
@@ -169,15 +182,15 @@ class PivotResponse(object):
 
         self.header = []
         for item in data['header']:
-            self.header.append(PivotItem(item['dimensionId'], item['members']))
+            self.header.append(PivotItem(item['dimensionId'], item['members'], item['metadataFields']))
 
         self.stub = []
         for item in data['stub']:
-            self.stub.append(PivotItem(item['dimensionId'], item['members']))
+            self.stub.append(PivotItem(item['dimensionId'], item['members'], item['metadataFields']))
 
         self.filter = []
         for item in data['filter']:
-            self.filter.append(PivotItem(item['dimensionId'], item['members']))
+            self.filter.append(PivotItem(item['dimensionId'], item['members'], item['metadataFields']))
 
         self.tuples = data['data']
 

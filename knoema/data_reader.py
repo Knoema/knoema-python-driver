@@ -234,27 +234,72 @@ class TransformationDataReader(SelectionDataReader):
         super().__init__(client, dim_values)
 
     def get_pandasframe(self):
-        pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
-        if self.include_metadata:
-            self._load_dimensions()
-            pandas_series_with_attr = {}
-            names_of_attributes = self._get_attribute_names()
 
         data_url = self._get_data_url()
         pivot_resp = self.client.get_json(definition.PivotResponse, data_url)
         # create dataframe with data
         series = self._get_data_series(pivot_resp)
-        pandas_series = self.creates_pandas_series(series, pandas_series)
+        pandas_series = self.creates_pandas_series(series, {})
         pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
         if not self.include_metadata:
             return pandas_data_frame
             
         # create dataframe with metadata
-        series_with_attr = self._get_metadata_series(pivot_resp, names_of_attributes)
-        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
+        series_with_attr = self._get_metadata_series(pivot_resp)
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, {})
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
         return pandas_data_frame, pandas_data_frame_with_attr
+
+    def _get_series_with_metadata(self, series_point, resp):
+        names = []
+        resp_dims = resp.header + resp.stub + resp.filter
+        for dim in resp_dims:
+            if dim.dimensionid == 'Time' or not dim.metadataFields:
+                continue
+            for item in dim.metadataFields:
+                if item.name == series_point[dim.dimensionid]:
+                    dim_attrs = item.fields
+                    break
+            value_empty = True
+            for key, value in dim_attrs.items(): 
+                names.append(value)
+                value_empty = False
+            if value_empty:
+                names.append(float("NaN"))
+
+        names.append(series_point.get('Unit'))
+        names.append(series_point.get('Scale'))
+        names.append(series_point.get('Mnemonics'))
+        for attr in self.dataset.timeseries_attributes:
+            names.append(series_point.get(attr.name))  
+        return tuple(names)     
+        
+    def _get_attribute_names(self, resp):
+        resp_dims = [dim for dim in (resp.header + resp.stub + resp.filter) if dim.metadataFields and any(dim.metadataFields)]
+        names = []
+        for d in self.dataset.dimensions:
+            for dim in resp_dims:
+                if dim.dimensionid == d.id:
+                    for field in dim.metadataFields[0].fields.keys():
+                        names.append(d.name +  ' ' + field)
+                    break
+        names.append('Unit')            
+        names.append('Scale') 
+        names.append('Mnemonics')
+        for attr in self.dataset.timeseries_attributes:
+            names.append(attr.name)     
+        return names
+
+    def _get_metadata_series(self, resp):
+        series = {}
+        names_of_attributes = self._get_attribute_names(resp)
+        for series_point in resp.tuples:
+            serie_name = self._get_series_name(series_point)
+            if serie_name not in series:
+                serie_attrs = self._get_series_with_metadata(series_point, resp)
+                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
+        return series  
 
     def _get_dimension_names(self):
         names = []
@@ -292,6 +337,8 @@ class TransformationDataReader(SelectionDataReader):
 
             filter_dims[dim.id] =  ",".join(quote(s) for s in splited_values)
 
+        if self.include_metadata:
+            filter_dims['metadata'] = 'true'
         url = "/" + self.dataset.id + "?" + "&".join("=".join((str(key), str(value))) for key, value in filter_dims.items())
         return url
 
@@ -468,7 +515,7 @@ class MnemonicsDataReader(DataReader):
     def _get_pandasframe_across_datasets(self):
            
         mnemonics_string = ';'.join(self.mnemonics) if isinstance(self.mnemonics, list) else self.mnemonics
-        mnemonics_resp = self.client.get_mnemonics(mnemonics_string)
+        mnemonics_resp = self.client.get_mnemonics(mnemonics_string, self.transform, self.frequency)
 
         dict_datasets = {}
         dict_dimensions = {} 

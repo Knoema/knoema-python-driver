@@ -151,11 +151,13 @@ class ApiClient:
         path = '/api/1.0/data/raw/?continuationToken={0}'
         return self._api_get(definition.RawDataResponse, path.format(token))
 
-    def get_mnemonics (self, mnemonics, transform):
+    def get_mnemonics (self, mnemonics, transform, frequency):
         """The method get series by mnemonics"""
         path = '/api/1.0/data/mnemonics?mnemonics={0}'
         if transform:
             path += '&transform=' + transform
+        if frequency:
+            path += '&frequency=' + frequency
         return self._api_get(definition.MnemonicsResponseList, path.format(mnemonics))
 
     def upload_file(self, file):

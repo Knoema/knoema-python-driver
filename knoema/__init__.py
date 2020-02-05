@@ -10,6 +10,10 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
     if not dataset and not mnemonics:
         raise ValueError('Dataset id is not specified')
 
+    frequency = dim_values['frequency'] if 'frequency' in dim_values else None
+    if mnemonics and frequency:
+        del dim_values['frequency']
+
     if mnemonics and dim_values:
         raise ValueError('The function does not support specifying mnemonics and selection in a single call')
 
@@ -19,7 +23,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
 
     ds = client.get_dataset(dataset) if dataset else None
 
-    reader =  MnemonicsDataReader(client, mnemonics, transform) if mnemonics \
+    reader =  MnemonicsDataReader(client, mnemonics, transform, frequency) if mnemonics \
         else TransformationDataReader(client, dim_values, transform) if ds.type != 'Regular' or 'frequency' in dim_values or transform\
         else StreamingDataReader(client, dim_values)
 

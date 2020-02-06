@@ -121,7 +121,7 @@ class PivotItemMetadata(object):
 class PivotItem(object):
     """The class contains pivot request item"""
 
-    def __init__(self, dimensionid=None, members=None, metadataFields=None):
+    def __init__(self, dimensionid=None, members=None, metadataFields=None, dimensionFields=None):
         self.dimensionid = dimensionid
         self.members = members
         if metadataFields:
@@ -129,6 +129,7 @@ class PivotItem(object):
                 metadata['parent'], metadata['fields']) for metadata in metadataFields]
         else:
             self.metadataFields = None
+        self.fields = dimensionFields
 
 
 class PivotTimeItem(PivotItem):
@@ -182,17 +183,20 @@ class PivotResponse(object):
 
         self.header = []
         for item in data['header']:
-            self.header.append(PivotItem(item['dimensionId'], item['members'], item['metadataFields']))
+            self.header.append(self._construct_dimension(item))
 
         self.stub = []
         for item in data['stub']:
-            self.stub.append(PivotItem(item['dimensionId'], item['members'], item['metadataFields']))
+            self.stub.append(self._construct_dimension(item))
 
         self.filter = []
         for item in data['filter']:
-            self.filter.append(PivotItem(item['dimensionId'], item['members'], item['metadataFields']))
+            self.filter.append(self._construct_dimension(item))
 
         self.tuples = data['data']
+
+    def _construct_dimension(self, item):
+        return PivotItem(item['dimensionId'], item['members'], item['metadataFields'], item['dimensionFields'] if 'dimensionFields' in item else None)
 
 class RawDataResponse(object):
     """The class contains raw data response"""

@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 import pandas
 import knoema.api_definitions as definition
 from urllib.parse import quote
+from urllib.error import HTTPError
 
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""
@@ -128,7 +129,7 @@ class SelectionDataReader(DataReader):
     def _get_dim_members(self, dim, splited_values):
         members = []
         for value in splited_values:
-            if value is None:
+            if value is None or isinstance(value, str) and not value:
                 raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
             member = dim.find_member_by_id(value)
@@ -140,6 +141,8 @@ class SelectionDataReader(DataReader):
 
             if member:
                 members.append(member.key)
+            else:
+                raise ValueError('Selection for dimension {} contains invalid elements'.format(dim.name))
 
         return members    
 
@@ -237,7 +240,14 @@ class TransformationDataReader(SelectionDataReader):
         names_of_dimensions = self._get_dimension_names()
 
         data_url = self._get_data_url()
-        pivot_resp = self.client.get_json(definition.PivotResponse, data_url)
+        try:
+            pivot_resp = self.client.get_json(definition.PivotResponse, data_url)
+        except HTTPError as ex:
+            if ex.code == 400:
+                raise ValueError(ex.read().decode('utf-8'))
+            else:
+                raise
+            
         # create dataframe with data
         series = self._get_data_series(pivot_resp)
         pandas_series = self.creates_pandas_series(series, {})
@@ -253,7 +263,7 @@ class TransformationDataReader(SelectionDataReader):
 
     def _get_series_with_metadata(self, series_point, resp):
         names = []
-        resp_dims = resp.header + resp.stub + resp.filter
+        resp_dims = [dim for dim in (resp.header + resp.stub + resp.filter) if dim.fields and any(dim.fields)]
         for dim in resp_dims:
             if dim.dimensionid == 'Time' or not dim.metadataFields:
                 continue
@@ -261,12 +271,18 @@ class TransformationDataReader(SelectionDataReader):
                 if item.name == series_point[dim.dimensionid]:
                     dim_attrs = item.fields
                     break
-            value_empty = True
-            for key, value in dim_attrs.items(): 
-                names.append(value)
-                value_empty = False
-            if value_empty:
-                names.append(float("NaN"))
+
+            for attr in dim.fields: 
+                find_elem = False
+                if attr['isSystemField']:
+                    continue
+                for key, value in dim_attrs.items(): 
+                    if definition.is_equal_strings_ignore_case(key, attr['name']):
+                        find_elem = True
+                        names.append(value)
+                        break
+                if not find_elem:
+                    names.append(None)
 
         names.append(series_point.get('Unit'))
         names.append(series_point.get('Scale'))
@@ -276,13 +292,14 @@ class TransformationDataReader(SelectionDataReader):
         return tuple(names)     
         
     def _get_attribute_names(self, resp):
-        resp_dims = [dim for dim in (resp.header + resp.stub + resp.filter) if dim.metadataFields and any(dim.metadataFields)]
+        resp_dims = [dim for dim in (resp.header + resp.stub + resp.filter) if dim.fields and any(dim.fields)]
         names = []
-        for d in self.dataset.dimensions:
-            for dim in resp_dims:
+        for dim in resp_dims:
+            for d in self.dataset.dimensions:
                 if dim.dimensionid == d.id:
-                    for field in dim.metadataFields[0].fields.keys():
-                        names.append(d.name +  ' ' + field)
+                    for attr in dim.fields:
+                        if not attr['isSystemField']:
+                            names.append(d.name +  ' ' + attr["displayName"])
                     break
         names.append('Unit')            
         names.append('Scale') 
@@ -325,7 +342,7 @@ class TransformationDataReader(SelectionDataReader):
                 filter_dims[name] = value
                 continue
 
-            splited_values = value.split(';') if isinstance(value, str) else value
+            splited_values = [x for x in value.split(';') if x] if isinstance(value, str) else value
             if definition.is_equal_strings_ignore_case(name, 'frequency'):
                 filter_dims["frequency"] = ",".join(splited_values)
                 continue
@@ -334,6 +351,9 @@ class TransformationDataReader(SelectionDataReader):
             if dim is None:
                 raise ValueError('Dimension with id or name {} is not found'.
                                  format(name))
+
+            if not splited_values:
+                raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
             filter_dims[dim.id] =  ",".join(quote(s) for s in splited_values)
 

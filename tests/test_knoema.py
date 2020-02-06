@@ -151,6 +151,14 @@ class TestKnoemaClient(unittest.TestCase):
 
         self.assertTrue('Dimension with id or name indicator is not found' in str(context.exception))
 
+    def test_wrong_dimension_with_transform(self):
+        """The method is testing if there is wrong dimension name is specified"""
+   
+        with self.assertRaises(ValueError) as context:
+            knoema.get('IMFWEO2017Apr', indicator='LP;NGDP', transform='PCH')
+
+        self.assertTrue('Dimension with id or name indicator is not found' in str(context.exception))
+
     def test_empty_dimension_selection(self):
         """The method is testing if there are no elements in dimension selection"""
 
@@ -159,13 +167,30 @@ class TestKnoemaClient(unittest.TestCase):
 
         self.assertTrue('Selection for dimension Country is empty' in str(context.exception))
 
+    def test_empty_dimension_selection_with_transform(self):
+        """The method is testing if there are no elements in dimension selection"""
+
+        with self.assertRaises(ValueError) as context:
+            knoema.get('IMFWEO2017Apr', country='', subject='LP;NGDP', transform='PCH')
+
+        self.assertTrue('Selection for dimension Country is empty' in str(context.exception))
+
+
     def test_wrong_dimension_selection(self):
         """The method is testing if there are incorrect in dimension selection"""
 
         with self.assertRaises(ValueError) as context:
-            knoema.get('IMFWEO2017Apr', country='914;512;111', subject='L1P;N1GDP')
+            knoema.get('IMFWEO2017Apr', country='914;512;111', subject='LP;N1GDP')
 
-        self.assertTrue('Selection for dimension Subject is empty' in str(context.exception))
+        self.assertTrue('Selection for dimension Subject contains invalid elements' in str(context.exception))
+
+    def test_wrong_dimension_selection_transform(self):
+        """The method is testing if there are incorrect in dimension selection"""
+
+        with self.assertRaises(ValueError) as context:
+            knoema.get('IMFWEO2017Apr', country='914;512;111', subject='LP;N1GDP', frequency='A')
+
+        self.assertTrue('Selection for dimension Subject contains invalid elements' in str(context.exception))
 
     def test_get_data_from_flat_dataset(self):
         """The method is testing load data from flat dataset"""
@@ -283,6 +308,33 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value(indx, sname)
         self.assertAlmostEqual(value, 22267.638, 3)
 
+
+    def test_get_data_from_dataset_by_dim_ids_transform(self):
+        """The method is testing load data from regular dataset with dimenions that have multi word names by dim ids"""
+
+        data_frame = knoema.get('FDI_FLOW_CTRY', **{'Reporting-country': 'AUS',
+                                                    'Partner-country': 'w0',
+                                                    'Measurement-principle': 'DI',
+                                                    'Type-of-FDI': 'T_FA_F',
+                                                    'Type-of-entity': 'ALL',
+                                                    'Accounting-entry': 'NET',
+                                                    'Level-of-counterpart': 'IMC',
+                                                    'Currency': 'USD',
+                                                    'Frequency': 'A'})
+
+        self.assertEqual(data_frame.shape[0], 7)
+        self.assertEqual(data_frame.shape[1], 1)
+
+        sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows - Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
+
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 31666.667, 3)
+
+        indx = data_frame.last_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 22267.638, 3)
+
     def test_delete_dataset_negative(self):
         """The method is negative test on dataset deletion"""
          
@@ -344,6 +396,32 @@ class TestKnoemaClient(unittest.TestCase):
         indx = data_frame.last_valid_index()
         value = data_frame.get_value(indx, sname)
         self.assertAlmostEqual(value, 22267.638, 3)   
+
+    def test_get_data_from_dataset_with_multiword_dimnames_and_metadata_transform(self):
+        """The method is testing load data from regular dataset with dimenions that have multi word names include metadata"""
+  
+        data_frame, metadata = knoema.get('FDI_FLOW_CTRY', True,**{'Reporting country': 'AUS',
+                                                    'Partner country/territory': 'w0',
+                                                    'Measurement principle': 'DI',
+                                                    'Type of FDI': 'T_FA_F',
+                                                    'Type of entity': 'ALL',
+                                                    'Accounting entry': 'NET',
+                                                    'Level of counterpart': 'IMC',
+                                                    'Currency': 'USD',
+                                                    'Frequency': 'A'})
+
+        self.assertEqual(data_frame.shape[0], 7)
+        self.assertEqual(data_frame.shape[1], 1)
+
+        sname = ('Australia','WORLD','Directional principle: Inward','FDI financial flows - Total','All resident units','Net','Immediate counterpart (Immediate investor or immediate host)','US Dollar','A')
+
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 31666.667, 3)
+
+        indx = data_frame.last_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertAlmostEqual(value, 22267.638, 3)
 
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata_and_mnemomics(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names include metadata and mnemonics"""
@@ -411,8 +489,8 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Airports', 'Bakel Airport', '')
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 1.0)   
-        self.assertEqual(metadata.get_value('Object Name latitude',sname),'14.847256')
-        self.assertEqual(metadata.get_value('Object Name longitude',sname),'-12.468264')
+        self.assertEqual(metadata.get_value('Object Name Latitude',sname),'14.847256')
+        self.assertEqual(metadata.get_value('Object Name Longitude',sname),'-12.468264')
 
         self.assertEqual(metadata.get_value('Scale',sname),1)
         self.assertEqual(metadata.get_value('Unit',sname),'# of records')
@@ -482,6 +560,17 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.get_value('Subject Id',sname),'FLIBOR6')
         self.assertEqual(metadata.get_value('Unit',sname),'Percent')
  
+    def test_get_data_with_partial_selection_with_metadata_transform(self):
+        """The method is testing getting series with partial selection"""
+
+        data_frame, metadata = knoema.get('IMFWEO2017Apr', True, subject = 'flibor6', frequency = 'A')
+        self.assertEqual(metadata.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
+        sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')
+        self.assertEqual(metadata.get_value('Country Id',sname),'158')
+        self.assertEqual(metadata.get_value('Subject Id',sname),'FLIBOR6')
+        self.assertEqual(metadata.get_value('Unit',sname),'Percent')
+ 
     def test_search_by_mnemonics_data(self):
         """The method is testing searching by mnemonics"""
 
@@ -529,6 +618,19 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.get_value('Indicator Id',sname),'NGDP')
         self.assertEqual(metadata.get_value('Unit',sname),'Number')       
         self.assertEqual(metadata.get_value('Mnemonics',sname),'512NGDP_A_in_test_dataset')  
+
+    def test_search_by_mnemonics_with_metadata_by_all_datasets_transform(self):
+        """The method is testing searching by mnemonics by all dataset and returns data and metadata"""
+        data_frame, metadata = knoema.get(None, True, mnemonics='512NGDP_Q_in_test_dataset;512NGDP', transform='PCH', frequency='A')
+        self.assertEqual(data_frame.shape[1], 1)
+        sname = ('512NGDP_Q_in_test_dataset')
+        indx = data_frame.first_valid_index()
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 25.0)
+        self.assertEqual(metadata.get_value('Country Id',sname),'512')
+        self.assertEqual(metadata.get_value('Indicator Id',sname),'NGDP')
+        self.assertEqual(metadata.get_value('Unit',sname),'%')       
+        self.assertEqual(metadata.get_value('Mnemonics',sname),'512NGDP_Q_in_test_dataset')  
     
     def test_get_all_series_from_dataset(self):
         """The method is testing getting all series from dataset"""
@@ -543,6 +645,31 @@ class TestKnoemaClient(unittest.TestCase):
 
     def test_with_empty_attributes_in_the_dimensions(self):
         data, metadata = knoema.get('IMFWEO2017Oct', include_metadata=True, country=['914','512'], subject='lp')
+        self.assertEqual(data.shape[0], 43)
+        self.assertEqual(data.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data.columns.names)
+        self.assertEqual(metadata.shape[0], 8)
+        self.assertEqual(metadata.shape[1], 2)
+        self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
+        indx = data.first_valid_index()
+        sname = ('Albania', 'Population (Persons)', 'A')
+        value = data.get_value(indx, sname)
+        self.assertEqual(value, 2.762)
+        
+        self.assertEqual(metadata.get_value('Country Id',sname),'914')
+        self.assertEqual(metadata.get_value('Subject Id',sname),'LP')
+        self.assertEqual(metadata.get_value('Subject SubjectDescription',sname),None)
+        self.assertEqual(metadata.get_value('Subject SubjectNotes',sname),None)
+        self.assertEqual(metadata.get_value('Subject Relevant',sname),None)
+        self.assertEqual(metadata.get_value('Unit',sname),'Persons (Millions)')       
+        self.assertEqual(metadata.get_value('Mnemonics',sname),None)
+
+        indx = data.last_valid_index()
+        value = data.get_value(indx, sname)
+        self.assertEqual(value, 2.856)
+        
+    def test_with_empty_attributes_in_the_dimensions_transform(self):
+        data, metadata = knoema.get('IMFWEO2017Oct', include_metadata=True, country=['914','512'], subject='lp', frequency='A')
         self.assertEqual(data.shape[0], 43)
         self.assertEqual(data.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], data.columns.names)

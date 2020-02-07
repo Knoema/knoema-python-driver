@@ -201,52 +201,19 @@ class SelectionDataReader(DataReader):
 
         return pivot_req    
 
-class PivotDataReader(SelectionDataReader):
-
-    def __init__(self, client, dim_values):
-        super().__init__(client, dim_values)
-
-    def get_pandasframe(self):
-        self._load_dimensions()
-        pandas_series = {}
-        names_of_dimensions = self._get_dimension_names()
-        if self.include_metadata:
-            pandas_series_with_attr = {}
-            names_of_attributes = self._get_attribute_names()
-
-        pivot_req = self._create_pivot_request()
-        pivot_resp = self.client.get_data(pivot_req)
-        # create dataframe with data
-        series = self._get_data_series(pivot_resp)
-        pandas_series = self.creates_pandas_series(series, pandas_series)
-        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
-        if not self.include_metadata:
-            return pandas_data_frame
-            
-        # create dataframe with metadata
-        series_with_attr = self._get_metadata_series(pivot_resp, names_of_attributes)
-        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
-        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
-        return pandas_data_frame, pandas_data_frame_with_attr
-
 class TransformationDataReader(SelectionDataReader):
 
-    def __init__(self, client, dim_values, transform):
+    def __init__(self, client, dim_values, transform, frequency):
         if transform:
             dim_values['transform'] = transform
+        if frequency:
+            dim_values['frequency'] = frequency
         super().__init__(client, dim_values)
 
     def get_pandasframe(self):
         names_of_dimensions = self._get_dimension_names()
 
-        data_url = self._get_data_url()
-        try:
-            pivot_resp = self.client.get_json(definition.PivotResponse, data_url)
-        except HTTPError as ex:
-            if ex.code == 400:
-                raise ValueError(ex.read().decode('utf-8'))
-            else:
-                raise
+        pivot_resp = self.client.get_dataset_data(self._get_data_url())
             
         # create dataframe with data
         series = self._get_data_series(pivot_resp)

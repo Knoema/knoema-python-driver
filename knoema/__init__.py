@@ -2,7 +2,7 @@
 
 from knoema.api_config import ApiConfig
 from knoema.api_client import ApiClient
-from knoema.data_reader import MnemonicsDataReader, StreamingDataReader, PivotDataReader, TransformationDataReader
+from knoema.data_reader import MnemonicsDataReader, StreamingDataReader, TransformationDataReader
 
 def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
@@ -11,7 +11,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         raise ValueError('Dataset id is not specified')
 
     frequency = dim_values['frequency'] if 'frequency' in dim_values else None
-    if mnemonics and frequency:
+    if frequency:
         del dim_values['frequency']
 
     if mnemonics and dim_values:
@@ -24,7 +24,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
     ds = client.get_dataset(dataset) if dataset else None
 
     reader =  MnemonicsDataReader(client, mnemonics, transform, frequency) if mnemonics \
-        else TransformationDataReader(client, dim_values, transform) if ds.type != 'Regular' or frequency or transform\
+        else TransformationDataReader(client, dim_values, transform, frequency) if ds.type != 'Regular' or frequency or transform\
         else StreamingDataReader(client, dim_values)
 
     reader.include_metadata = include_metadata

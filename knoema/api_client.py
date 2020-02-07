@@ -1,6 +1,7 @@
 """This module contains client that wrap requests and response to Knoema API"""
 
 import json
+import urllib.parse
 import urllib.request
 import time
 import datetime
@@ -38,13 +39,20 @@ class ApiClient:
     """This is client that wrap requests and response to Knoema API"""
 
     def __init__(self, host, appid=None, appsecret=None):
-        self._host = host
+        splitted = urllib.parse.urlsplit(host)
+        self._host = splitted.netloc.strip()
+        if not self._host:
+            self._host = splitted.path.strip()
+        self._schema = splitted.scheme
+        if not self._schema:
+            self._schema = 'http'
+
         self._appid = appid
         self._appsecret = appsecret
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor)
 
     def _get_url(self, apipath):
-        return 'http://{}{}'.format(self._host, apipath)
+        return urllib.parse.urlunsplit((self._schema, self._host, apipath, '', ''))
 
     def _get_request_headers(self):
 

@@ -94,9 +94,9 @@ By default the function knoema.get returns the one dataframe with data. If you w
      
 The function, in this case, returns two dataframes - one with data, second with metadata.    
 
-******************
+********************
 Data Transformation
-******************
+********************
 You can use transform parameter to apply transformation to requested data, like this::
 
 

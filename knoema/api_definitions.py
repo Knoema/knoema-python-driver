@@ -92,6 +92,7 @@ class Dataset(object):
         self.type = data['type']
         self.dimensions = [DimensionModel(dim) for dim in data['dimensions']]
         self.timeseries_attributes = [TimeSeriesAttribute(attr) for attr in data['timeseriesAttributes']] if 'timeseriesAttributes' in data else []
+        self.has_time = self.type == 'Regular' or any(x for x in data['columns'] if x['type'] == 'Date')
             
     def find_dimension_by_name(self, dim_name):
         """the method searching dimension with a given name"""

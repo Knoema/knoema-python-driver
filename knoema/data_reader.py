@@ -322,7 +322,8 @@ class TransformationDataReader(SelectionDataReader):
         names = []
         for dim in self.dataset.dimensions:
             names.append(dim.name)
-        names.append('Frequency')             
+        if self.dataset.has_time:
+            names.append('Frequency')             
         return names   
 
     def _get_series_name(self, series_point):
@@ -330,7 +331,8 @@ class TransformationDataReader(SelectionDataReader):
         for dim in self.dataset.dimensions:
             if dim.id in series_point:
                 names.append(series_point[dim.id])
-        names.append(series_point['Frequency'])
+        if self.dataset.has_time:
+            names.append(series_point['Frequency'])
         return tuple(names) 
 
     def _get_data_url(self):

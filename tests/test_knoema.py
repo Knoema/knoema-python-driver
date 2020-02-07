@@ -255,7 +255,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 1)
         self.assertEqual(data_frame.shape[1], 1)
 
-        sname = ('Airports', 'Bakel Airport', '')
+        sname = ('Airports', 'Bakel Airport')
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 1.0)
 
@@ -486,7 +486,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.shape[0], 5)
         self.assertEqual(metadata.shape[1], 1)
 
-        sname = ('Airports', 'Bakel Airport', '')
+        sname = ('Airports', 'Bakel Airport')
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 1.0)   
         self.assertEqual(metadata.get_value('Object Name Latitude',sname),'14.847256')

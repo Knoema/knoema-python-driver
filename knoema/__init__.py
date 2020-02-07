@@ -24,7 +24,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
     ds = client.get_dataset(dataset) if dataset else None
 
     reader =  MnemonicsDataReader(client, mnemonics, transform, frequency) if mnemonics \
-        else TransformationDataReader(client, dim_values, transform) if ds.type != 'Regular' or 'frequency' in dim_values or transform\
+        else TransformationDataReader(client, dim_values, transform) if ds.type != 'Regular' or frequency or transform\
         else StreamingDataReader(client, dim_values)
 
     reader.include_metadata = include_metadata

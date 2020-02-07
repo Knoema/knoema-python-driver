@@ -54,7 +54,10 @@ class ApiClient:
     def _get_request_headers(self):
 
         if not self._appid or not self._appsecret:
-            return {'Content-Type' : 'application/json'}
+            return {
+                'Content-Type' : 'application/json',
+                'Accept': 'application/json'
+                }
 
         key = datetime.datetime.utcnow().strftime('%d-%m-%y-%H').encode()
         hashed = hmac.new(key, self._appsecret.encode(), hashlib.sha1)
@@ -63,20 +66,17 @@ class ApiClient:
 
         return {
             'Content-Type' : 'application/json',
+            'Accept': 'application/json',
             'Authorization' : auth
             }
 
-    def _api_get(self, obj, apipath, query=None, additional_headers={}):
+    def _api_get(self, obj, apipath, query=None):
 
         url = self._get_url(apipath)
         if query:
             url = '{}?{}'.format(url, query)
 
-        headers = self._get_request_headers()
-        for k, v in additional_headers.items():
-            headers[k] = v
-
-        req = urllib.request.Request(url, headers=headers)
+        req = urllib.request.Request(url, headers=self._get_request_headers())
         resp = self._opener.open(req)
         return obj(_response_to_json(resp))
 
@@ -134,7 +134,7 @@ class ApiClient:
     def get_json(self, obj, url):
         """The method is getting JSON by URL and parses it to specified object"""
 
-        return self._api_get(obj, url, additional_headers={'Accept': 'application/json'})
+        return self._api_get(obj, url)
 
     def get_data_raw(self, request):
         """The method is getting data by raw request"""

@@ -174,13 +174,13 @@ Examples::
     knoema.get('IMFWEO2017Oct', dimension_not_exist='914', subject='lp')
     knoema.get('IMFWEO2017Oct', **{'dimension not exist':'914', 'subject':'lp'})
 
-3 "ValueError: Selection for dimension dimension_name is empty"
+3. "ValueError: Selection for dimension dimension_name is empty"
 
-This error appears when you use empty selection for dimension or all specified elements don't exist.
+This error appears when you use empty selection for dimension .
 Examples::
 
     knoema.get('IMFWEO2017Oct', country ='', subject='lp')
-    knoema.get('IMFWEO2017Oct', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
+    knoema.get('IMFWEO2017Oct', **{'country':'914', 'subject':''})
 
 4. "ValueError: Requested dataset doesn't exist or you don't have access to it"
 
@@ -246,3 +246,12 @@ Example::
 
     knoema.get('IMFWEO2017Oct', mnemonics = 'some_mnemonic', country ='912', subject='lp')
     knoema.get(None, mnemonics = 'some_mnemonic', country = 'USA')
+
+13. "ValueError: Selection for dimension dimension_name contains invalid elements"
+
+This error appears when any of the specified elements don't exist.
+Examples::
+
+    knoema.get('IMFWEO2017Oct', country ='', subject='lp')
+    knoema.get('IMFWEO2017Oct', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
+

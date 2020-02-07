@@ -14,6 +14,7 @@ import os
 import knoema.api_definitions as definition
 import sys
 import ssl
+from urllib.error import HTTPError
 
 def _random_string(length):
     return ''.join(random.choice(string.ascii_letters) for ii in range(length + 1))

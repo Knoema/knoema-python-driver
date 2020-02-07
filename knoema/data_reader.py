@@ -6,7 +6,6 @@ from dateutil.relativedelta import relativedelta
 import pandas
 import knoema.api_definitions as definition
 from urllib.parse import quote
-from urllib.error import HTTPError
 
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""

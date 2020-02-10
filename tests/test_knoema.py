@@ -259,6 +259,17 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.get_value('All time', sname)
         self.assertEqual(value, 1.0)
 
+    def test_get_data_from_flat_dataset_with_datecolumn(self):
+        """The method is testing load data from flat dataset with specifying datecolumn"""
+
+        data_frame = knoema.get('bjxchy', country='Albania', measure='Original Principal Amount ($)', datecolumn='Effective Date (Most Recent)', timerange='2010-2015', frequency='A')
+        self.assertEqual(data_frame.shape[0], 5)
+        self.assertEqual(data_frame.shape[1], 5)
+
+        sname = ('Albania', 'Ministry of Finance', 'Albania', 'FSL', 'Disbursing', 'Original Principal Amount ($)', 'A')
+        value = data_frame.get_value('2013-01-01', sname)
+        self.assertEqual(value, 40000000.0)
+
     def test_incorrect_dataset_id(self):
         """The method is testing if dataset id set up incorrectly"""
 

@@ -303,11 +303,14 @@ class TransformationDataReader(SelectionDataReader):
 
     def _get_data_url(self):
         filter_dims = {}
-        passed_params = ['timerange', 'transform', 'datecolumn']
+        passed_params = ['timerange', 'transform']
 
         for name, value in self.dim_values.items():
             if name.lower() in passed_params:
                 filter_dims[name] = value
+                continue
+            if definition.is_equal_strings_ignore_case(name, 'datecolumn') and self.dataset.type != 'Regular':
+                filter_dims['datecolumn'] = quote(value)
                 continue
 
             splited_values = [x for x in value.split(';') if x] if isinstance(value, str) else value

@@ -125,6 +125,11 @@ In order to get requested data normalized to specific frequency, you can specify
 
 When the frequency of time-series is different from the value of Frequency parameter aggregation/disaggregation of data is performed.
 
+For datasets with several date columns you can specify particular column with datecolumn parameter, like this::
+
+    import knoema
+    data_frame = knoema.get('bjxchy', country='Albania', measure='Original Principal Amount ($)', datecolumn='Effective Date (Most Recent)', timerange='2010-2015', frequency='A')
+    
 ******************
 Uploading Dataset
 ******************

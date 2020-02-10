@@ -3,6 +3,7 @@
 from knoema.api_config import ApiConfig
 from knoema.api_client import ApiClient
 from knoema.data_reader import MnemonicsDataReader, StreamingDataReader, TransformationDataReader
+from knoema.api_definitions import is_equal_strings_ignore_case
 
 def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
@@ -10,9 +11,16 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
     if not dataset and not mnemonics:
         raise ValueError('Dataset id is not specified')
 
-    frequency = dim_values['frequency'] if 'frequency' in dim_values else None
-    if frequency:
-        del dim_values['frequency']
+    frequency = None
+    for name, value in dim_values.copy().items():
+        if is_equal_strings_ignore_case(name, 'frequency'):
+            frequency = value
+            del dim_values[name]
+            continue
+        if is_equal_strings_ignore_case(name, 'transform'):
+            transform = value
+            del dim_values[name]
+            continue
 
     if mnemonics and dim_values:
         raise ValueError('The function does not support specifying mnemonics and selection in a single call')

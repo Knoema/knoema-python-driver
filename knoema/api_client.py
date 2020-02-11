@@ -132,10 +132,10 @@ class ApiClient:
         path = '/api/1.0/data/pivot/'
         return self._api_post(definition.PivotResponse, path, pivotrequest)
 
-    def get_dataset_data(self, url):
+    def get_dataset_data(self, dataset_id, query):
         """The method is getting JSON by URL and parses it to specified object"""
         try:
-            return self._api_get(definition.PivotResponse, url)
+            return self._api_get(definition.PivotResponse, '/api/1.2/data/{}'.format(dataset_id), query)
         except HTTPError as ex:
             if ex.code == 400:
                 raise ValueError(ex.read().decode('utf-8'))

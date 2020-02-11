@@ -212,7 +212,7 @@ class TransformationDataReader(SelectionDataReader):
     def get_pandasframe(self):
         names_of_dimensions = self._get_dimension_names()
 
-        pivot_resp = self.client.get_dataset_data(self._get_data_url())
+        pivot_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_query())
             
         # create dataframe with data
         series = self._get_data_series(pivot_resp)
@@ -301,7 +301,7 @@ class TransformationDataReader(SelectionDataReader):
             names.append(series_point['Frequency'])
         return tuple(names) 
 
-    def _get_data_url(self):
+    def _get_data_query(self):
         filter_dims = {}
         passed_params = ['timerange', 'transform']
 
@@ -330,8 +330,7 @@ class TransformationDataReader(SelectionDataReader):
 
         if self.include_metadata:
             filter_dims['metadata'] = 'true'
-        url = "/" + self.dataset.id + "?" + "&".join("=".join((str(key), str(value))) for key, value in filter_dims.items())
-        return url
+        return "&".join("=".join((str(key), str(value))) for key, value in filter_dims.items())
 
 class StreamingDataReader(SelectionDataReader):
 

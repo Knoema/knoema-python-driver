@@ -79,6 +79,15 @@ For case when the dimensions of dataset that have multi word names use the next 
                                                     'Level of counterpart': 'IMC',
                                                     'Currency': 'USD'})
 
+If specified elements' names contain semicolons you can override default elements separator like that::
+
+    import knoema
+    data_frame = knoema.get('IMFWEO2019Oct',
+        country='Albania',
+        subject='Gross domestic product, constant prices (Percent change)|Gross domestic product per capita, constant prices (Purchasing power parity; 2011 international dollar)',
+        separator='|')
+
+
 In addition to the required using of the selections for dimensions, you can additionally specify the period and frequencies in the parameters. For more details, see the example below::
 
     import knoema

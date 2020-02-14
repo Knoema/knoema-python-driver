@@ -5,7 +5,7 @@ from knoema.api_client import ApiClient
 from knoema.data_reader import MnemonicsDataReader, StreamingDataReader, TransformationDataReader
 from knoema.api_definitions import is_equal_strings_ignore_case
 
-def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, **dim_values):
+def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, separator = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
 
     if not dataset and not mnemonics:
@@ -37,6 +37,9 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
 
     reader.include_metadata = include_metadata
     reader.dataset = ds
+
+    if separator:
+        reader.separator = separator
 
     return reader.get_pandasframe()
  

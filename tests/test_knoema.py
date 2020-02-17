@@ -747,3 +747,20 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Albania', 'Gross domestic product per capita, constant prices (Purchasing power parity; 2011 international dollar)', 'A')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 4832.599)
+
+    def test_getdata_default_web_separator(self):
+        """The method is testing getting data with custom separator"""
+
+        data_frame = knoema.get('IMFWEO2019Oct',
+            country='Albania',
+            subject='NGDP_RPCH,NGDPRPPPPC',
+            separator=',')
+        self.assertEqual(data_frame.shape[0], 45)
+        self.assertEqual(data_frame.shape[1], 2)
+
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
+
+        indx = data_frame.first_valid_index()
+        sname = ('Albania', 'Gross domestic product per capita, constant prices (Purchasing power parity; 2011 international dollar)', 'A')
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 4832.599)

@@ -15,6 +15,7 @@ class DataReader(object):
         self.dataset = None
         self.include_metadata = False
         self.dimensions = []     
+        self.separator = ';'
 
     def _get_series_name(self, series_point):
         names = []
@@ -169,7 +170,7 @@ class SelectionDataReader(DataReader):
                 time_range = value
                 continue
 
-            splited_values = value.split(';') if isinstance(value, str) else value
+            splited_values = value.split(self.separator) if isinstance(value, str) else value
             if definition.is_equal_strings_ignore_case(name, 'frequency'):
                 pivot_req.frequencies = splited_values
                 continue
@@ -313,9 +314,9 @@ class TransformationDataReader(SelectionDataReader):
                 filter_dims['datecolumn'] = quote(value)
                 continue
 
-            splited_values = [x for x in value.split(';') if x] if isinstance(value, str) else value
+            splited_values = [x for x in value.split(self.separator) if x] if isinstance(value, str) else value
             if definition.is_equal_strings_ignore_case(name, 'frequency'):
-                filter_dims["frequency"] = ",".join(splited_values)
+                filter_dims["frequency"] = self.separator.join(splited_values)
                 continue
 
             dim = self._find_dimension(name)
@@ -326,10 +327,14 @@ class TransformationDataReader(SelectionDataReader):
             if not splited_values:
                 raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
-            filter_dims[dim.id] =  ",".join(quote(s) for s in splited_values)
+            filter_dims[dim.id] =  self.separator.join(quote(s) for s in splited_values)
 
         if self.include_metadata:
             filter_dims['metadata'] = 'true'
+        
+        if self.separator != ',':
+             filter_dims['separator'] = self.separator
+
         return "&".join("=".join((str(key), str(value))) for key, value in filter_dims.items())
 
 class StreamingDataReader(SelectionDataReader):
@@ -481,7 +486,7 @@ class MnemonicsDataReader(DataReader):
             names_of_attributes = self._get_attribute_names()
 
         mnemonics = self.mnemonics
-        mnemonics_string = ';'.join(mnemonics) if isinstance(mnemonics, list) else mnemonics
+        mnemonics_string = self.separator.join(mnemonics) if isinstance(mnemonics, list) else mnemonics
         mnemonics_resp = self.client.get_mnemonics(mnemonics_string, self.transform, self.frequency)
             
         for item in mnemonics_resp.items:
@@ -504,7 +509,7 @@ class MnemonicsDataReader(DataReader):
 
     def _get_pandasframe_across_datasets(self):
            
-        mnemonics_string = ';'.join(self.mnemonics) if isinstance(self.mnemonics, list) else self.mnemonics
+        mnemonics_string = self.separator.join(self.mnemonics) if isinstance(self.mnemonics, list) else self.mnemonics
         mnemonics_resp = self.client.get_mnemonics(mnemonics_string, self.transform, self.frequency)
 
         dict_datasets = {}

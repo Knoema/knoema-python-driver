@@ -308,7 +308,7 @@ class TransformationDataReader(SelectionDataReader):
 
         for name, value in self.dim_values.items():
             if name.lower() in passed_params:
-                filter_dims[name] = value
+                filter_dims[name] = quote(value)
                 continue
             if definition.is_equal_strings_ignore_case(name, 'datecolumn') and self.dataset.type != 'Regular':
                 filter_dims['datecolumn'] = quote(value)

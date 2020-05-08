@@ -4,6 +4,8 @@ import unittest
 import datetime
 import knoema
 import urllib
+import pandas
+import os
 
 class TestKnoemaClient(unittest.TestCase):
     """This is class with knoema client unit tests"""
@@ -13,8 +15,8 @@ class TestKnoemaClient(unittest.TestCase):
     def setUp(self):
         apicfg = knoema.ApiConfig()
         apicfg.host = self.base_host
-        apicfg.app_id = 'FzOYqDg'
-        apicfg.app_secret='SPrvmY8eGRcGA'
+        apicfg.app_id = os.environ['KNOEMA_APP_ID'] if 'KNOEMA_APP_ID' in os.environ else 'FzOYqDg'
+        apicfg.app_secret = os.environ['KNOEMA_APP_SECRET'] if 'KNOEMA_APP_SECRET' in os.environ else 'SPrvmY8eGRcGA'
 
     def test_getdata_singleseries_by_member_id(self):
         """The method is testing getting single series by dimension member ids"""
@@ -764,3 +766,122 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Albania', 'Gross domestic product per capita, constant prices (Purchasing power parity; 2011 international dollar)', 'A')
         value = data_frame.get_value(indx, sname)
         self.assertEqual(value, 4832.599)
+
+    def test_getdata_region_dim_region_id(self):
+        """The method is testing getting data from dataset with region dimention by region id"""
+
+        data_frame = knoema.get('IMFWEO2019Oct',
+            country = 'AF',
+            subject = ['Gross domestic product, constant prices (Percent change)']
+        )
+
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
+        self.assertEqual('Afghanistan', data_frame.columns.values[0][0])
+
+        indx = data_frame.first_valid_index()
+        sname = ('Afghanistan', 'Gross domestic product, constant prices (Percent change)', 'A')
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 8.692)
+
+    def test_getdata_region_as_dim_region_id(self):
+        """The method is testing getting data from dataset with region dimention by region id"""
+
+        data_frame = knoema.get('IMFWEO2019Oct',
+            region = 'AF',
+            subject = ['Gross domestic product, constant prices (Percent change)']
+        )
+
+        self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
+        self.assertEqual('Afghanistan', data_frame.columns.values[0][0])
+
+        indx = data_frame.first_valid_index()
+        sname = ('Afghanistan', 'Gross domestic product, constant prices (Percent change)', 'A')
+        value = data_frame.get_value(indx, sname)
+        self.assertEqual(value, 8.692)
+
+    def test_search_wrapper_search_for_timeseries(self):
+        """The method is testing search wrapper to search for timeseries"""
+
+        search_results = knoema.search('Italy inflation')
+        search_results_1 = knoema.search('UAE oil production')
+
+        self.assertTrue(len(search_results.series) > 0)
+        self.assertTrue(len(search_results_1.series) > 0)
+
+        first_series = search_results.series[0].get()
+        first_series_1 = search_results_1.series[0].get()
+
+        self.assertIs(type(first_series), pandas.core.frame.DataFrame)
+        self.assertIs(type(first_series_1), pandas.core.frame.DataFrame)
+
+    def test_grouping_functionality(self):
+        """The method is tesing grouping functionality"""
+
+        generator = knoema.get('IMFWEO2017Oct', include_metadata = True, group_by='country', country='Albania;Italy;Japan', subject='ngdp', timerange='2005-2010')
+        frames = []
+        for frame in generator:
+            frames.append(frame)
+
+        self.assertEqual(len(frames), 3)
+        self.assertIs(type(frames[0].data), pandas.core.frame.DataFrame)
+        self.assertIs(type(frames[0].metadata), pandas.core.frame.DataFrame)
+
+    def test_too_long_get_query_string(self):
+        """The method is testing issue with loo long get query string"""
+
+        for frame in knoema.get('US500COMPFINST2017Oct', include_metadata = True, indicator = 'Total Assets', frequency = 'A', group_by = 'company'):
+            company = frame.id
+            data_frame = frame.data
+            metadata_frame = frame.metadata
+
+            self.assertIsNotNone(company, None)
+            self.assertIs(type(data_frame), pandas.core.frame.DataFrame)
+            self.assertIs(type(metadata_frame), pandas.core.frame.DataFrame)
+
+            break
+
+    def test_ticker_endpoint(self):
+        """Testing ticker endpoint"""
+
+        ticker = knoema.ticker('DDD')
+
+        self.assertEqual(ticker.name, '3D SYSTEMS')
+        self.assertEqual(len(ticker.groups), 6)
+        self.assertEqual(ticker.groups[0].name, 'HOLT Scorecards')
+        self.assertEqual(len(ticker.groups[0].indicators), 23)
+        self.assertEqual(ticker.groups[0].indicators[0].name, '% Change in CFROI')
+        self.assertIs(type(ticker.groups[0].indicators[0].get()), pandas.core.frame.DataFrame)
+
+        indicator = ticker.get_indicator('% Upside / Downside')
+        self.assertEqual(indicator.name, '% Upside / Downside')
+        self.assertIs(type(indicator.get()), pandas.core.frame.DataFrame)
+
+    def test_FQ_frequescy(self):
+        """Testing FQ frequency"""
+
+        data_frame = knoema.get('ADFA2020', company='GRUBHUB', indicator='Sales', frequency='FQ')
+        self.assertIs(type(data_frame), pandas.core.frame.DataFrame)
+        self.assertEqual(data_frame.shape[0], 26)
+        self.assertEqual(data_frame.shape[1], 1)
+
+    def test_aggregations(self):
+        """Testing aggregations disaggregation"""
+
+        frame = knoema.get('ADSbP2020', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
+        self.assertEqual(frame.shape[0], 821)
+        self.assertEqual(frame.shape[1], 1)
+
+        generator = knoema.get('ADSbP2020', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
+        for frame in generator:
+            self.assertEqual(frame.data.shape[0], 821)
+            self.assertEqual(frame.data.shape[1], 1)
+            
+
+        frame = knoema.get('ADSbP2020', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
+        self.assertEqual(frame.shape[0], 9)
+        self.assertEqual(frame.shape[1], 1)
+
+        generator = knoema.get('ADSbP2020', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
+        for frame in generator:
+            self.assertEqual(frame.data.shape[0], 9)
+            self.assertEqual(frame.data.shape[1], 1)

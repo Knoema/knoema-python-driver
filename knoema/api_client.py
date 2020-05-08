@@ -13,6 +13,8 @@ import string
 import io
 import os
 import knoema.api_definitions as definition
+import knoema.api_definitions_sema as definition_sema
+import knoema.api_definitions_search as definition_search
 from urllib.error import HTTPError
 
 def _random_string(length):
@@ -52,6 +54,8 @@ class ApiClient:
         self._appsecret = appsecret
         self._opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor)
 
+        self._search_config = None
+
     def _get_url(self, apipath):
         return urllib.parse.urlunsplit((self._schema, self._host, apipath, '', ''))
 
@@ -87,10 +91,15 @@ class ApiClient:
 
     def _api_post(self, responseobj, apipath, requestobj):
 
+        json_data = requestobj.save_to_json()
+        
+        return self._api_post_json(responseobj, apipath, json_data)
+
+    def _api_post_json(self, responseobj, apipath, requestjson):
+
         url = self._get_url(apipath)
 
-        json_data = requestobj.save_to_json()
-        binary_data = json_data.encode()
+        binary_data = requestjson.encode()
 
         headers = self._get_request_headers()
         req = urllib.request.Request(url, binary_data, headers)
@@ -133,6 +142,12 @@ class ApiClient:
         path = '/api/1.0/data/pivot/'
         return self._api_post(definition.PivotResponse, path, pivotrequest)
 
+    def get_data_by_json(self, pivotrequest_json):
+        """The method is getting data by pivot request (json)"""
+
+        path = '/api/1.0/data/pivot/'
+        return self._api_post_json(definition.PivotResponse, path, pivotrequest_json)
+
     def get_dataset_data(self, dataset_id, query):
         """The method is getting JSON by URL and parses it to specified object"""
         try:
@@ -143,22 +158,22 @@ class ApiClient:
             else:
                 raise
 
-    def get_data_raw(self, request):
+    def get_data_raw(self, request, metadata_only = False):
         """The method is getting data by raw request"""
-        path = '/api/1.0/data/raw/'
+        path = '/api/1.2/data/raw/' + ('?metadataOnly=true' if metadata_only else '')
         res = self._api_post(definition.RawDataResponse, path, request)
         token = res.continuation_token
         while token is not None:
-           res2 = self.get_data_raw_with_token(token)
+           res2 = self.get_data_raw_with_token(token, metadata_only)
            res.series += res2.series
            token = res2.continuation_token 
         return res
 
-    def get_data_raw_with_token(self, token):
-        path = '/api/1.0/data/raw/?continuationToken={0}'
+    def get_data_raw_with_token(self, token, metadata_only = False):
+        path = '/api/1.0/data/raw/?continuationToken={0}' + ('&metadataOnly=true' if metadata_only else '')
         return self._api_get(definition.RawDataResponse, path.format(token))
 
-    def get_mnemonics (self, mnemonics, transform, frequency):
+    def get_mnemonics(self, mnemonics, transform, frequency):
         """The method get series by mnemonics"""
         path = '/api/1.0/data/mnemonics?mnemonics={0}'
         if transform:
@@ -166,6 +181,34 @@ class ApiClient:
         if frequency:
             path += '&frequency=' + frequency
         return self._api_get(definition.MnemonicsResponseList, path.format(mnemonics))
+
+    def get_company_info(self, ticker):
+        """The method get company data"""
+
+        path = 'api/1.0/sema/{0}'
+        return self._api_get(definition_sema.CompanyInt, path.format(ticker))
+
+    def get_indicator_info(self, path):
+        path = 'api/1.0/sema/{0}'.format(path)
+        url = self._get_url(path)
+
+        headers = self._get_request_headers()
+        req = urllib.request.Request(url, headers=headers)
+        resp = self._opener.open(req)
+        return _response_to_json(resp)
+
+    def search(self, query):
+        if self._search_config == None:
+            path = '/api/1.0/search/config'
+            self._search_config = self._api_get(definition_search.SearchConfig, path)
+
+        headers = self._get_request_headers()
+        url = self._search_config.build_search_url(query)
+        req = urllib.request.Request(url, headers=headers)
+        req = urllib.request.Request(url)
+        resp = self._opener.open(req)
+
+        return definition_search.SearchResultsInt(_response_to_json(resp))
 
     def upload_file(self, file):
         """The method is posting file to the remote server"""

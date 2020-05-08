@@ -4,14 +4,23 @@ from knoema.api_config import ApiConfig
 from knoema.api_client import ApiClient
 from knoema.data_reader import MnemonicsDataReader, StreamingDataReader, TransformationDataReader
 from knoema.api_definitions import is_equal_strings_ignore_case
+from knoema.api_definitions_sema import Company
+from knoema.api_definitions_search import SearchResults
 
-def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, separator = None, **dim_values):
+def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, separator = None, group_by = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
 
     if not dataset and not mnemonics:
         raise ValueError('Dataset id is not specified')
 
+    config = ApiConfig()
+    client = ApiClient(config.host, config.app_id, config.app_secret)
+    client.check_correct_host()
+
+    ds = client.get_dataset(dataset) if dataset else None
+
     frequency = None
+    timerange = None
     for name, value in dim_values.copy().items():
         if is_equal_strings_ignore_case(name, 'frequency'):
             frequency = value
@@ -21,28 +30,86 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
             transform = value
             del dim_values[name]
             continue
+        if is_equal_strings_ignore_case(name, 'timerange'):
+            timerange = value
+            continue
 
-    if mnemonics and dim_values:
-        raise ValueError('The function does not support specifying mnemonics and selection in a single call')
+    if mnemonics:
+        reader =  MnemonicsDataReader(client, mnemonics, transform, frequency)
+        reader.include_metadata = include_metadata
+        reader.dataset = ds
+
+        if separator:
+            reader.separator = separator
+            
+        return reader.get_pandasframe()
+ 
+    if not dataset:
+        raise ValueError('Dataset id is not specified')
+
+    if ds.type == 'Regular' and (transform or ds.is_remote or group_by):
+        metadata_reader =  StreamingDataReader(client, dim_values)
+        metadata_reader.dataset = ds
+        if separator:
+            metadata_reader.separator = separator
+
+        metadata = metadata_reader.get_series_metadata()
+
+        reader = TransformationDataReader(client, None, transform, frequency, group_by)
+        reader.include_metadata = include_metadata
+        reader.dataset = ds
+
+        if group_by:
+            return reader.get_pandasframe_by_metadata_grouped(metadata, timerange)
+        
+        return reader.get_pandasframe_by_metadata(metadata, timerange)
+    else:
+        reader =  TransformationDataReader(client, dim_values, transform, frequency, None) if ds.type != 'Regular' or frequency or transform\
+            else StreamingDataReader(client, dim_values)
+
+        reader.include_metadata = include_metadata
+        reader.dataset = ds
+
+        if separator:
+            reader.separator = separator
+            
+        return reader.get_pandasframe()
+
+def ticker(ticker):
+    """Use this function to get data about company"""
+
+    if not ticker:
+        raise ValueError('Ticker or company name is not specified')
 
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
     client.check_correct_host()
 
-    ds = client.get_dataset(dataset) if dataset else None
+    company_int = client.get_company_info(ticker)
 
-    reader =  MnemonicsDataReader(client, mnemonics, transform, frequency) if mnemonics \
-        else TransformationDataReader(client, dim_values, transform, frequency) if ds.type != 'Regular' or frequency or transform\
-        else StreamingDataReader(client, dim_values)
+    return Company(company_int, client)
 
-    reader.include_metadata = include_metadata
-    reader.dataset = ds
+def search(query):
+    """Use this function to make search request"""
 
-    if separator:
-        reader.separator = separator
+    if not query:
+        raise ValueError('Query is not specified')
 
-    return reader.get_pandasframe()
- 
+    config = ApiConfig()
+    client = ApiClient(config.host, config.app_id, config.app_secret)
+    client.check_correct_host()
+
+    search_results_int = client.search(query)
+    search_results = SearchResults(search_results_int, client)
+
+    if search_results.instant != None:
+        if search_results.instant.type == 'ConceptBind':
+            company_int = client.get_company_info(search_results.instant.id)
+
+            search_results.instant.company = Company(company_int, client)
+
+    return search_results
+
 def upload(file_path, dataset=None, public=False):
     """Use this function to upload data to Knoema dataset."""
 

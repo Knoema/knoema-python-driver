@@ -38,17 +38,19 @@ Retrieving series from datasets
 *******************************
 There are one method for retrieving series from datasets in Python: the **get** method. The method works with knoema datasets.
 
-The following quick call can be used to retrieve a timeserie from dataset::
+The following quick call can be used to retrieve a time-series from dataset (three cases with the same result)::
 
    import knoema
-   data_frame = knoema.get('IMFWEO2017Oct', country='914', subject='ngdp')
+   data_frame = knoema.get('IMFWEO2017Oct', country='Albania', subject='Gross domestic product, current prices (U.S. dollars)')
+   data_frame = knoema.get('IMFWEO2017Oct', country='AL', subject='Gross domestic product, current prices (U.S. dollars)')
+   data_frame = knoema.get('IMFWEO2017Oct', region='AL', subject='Gross domestic product, current prices (U.S. dollars)')
 
 where:
 
 * 'IMFWEO2017Oct' this is a public dataset, that available for all users by reference https://knoema.com/IMFWEO2017Oct.
 * country and subject are dimensions names
-* '914' is id of country *Albania*
-* 'ngdp' is id of subject *Gross domestic product, current prices (U.S. dollars)*
+* AL is region id for Albania
+* region is synonymous for name of geographic dimension
 
 This example finds all data points for the dataset IMFWEO2017Oct with selection by country = *Albania* and subject =  *Gross domestic product, current prices (U.S. dollars)* and stores this series in a pandas dataframe. You can then view the dataframe with operations *data_frame.head()* or *print(date_frame)*
 
@@ -59,12 +61,12 @@ If some dimension is not specified, the method will consider all the elements in
 For multiple selection you can use the next examples::
   
     import knoema
-    data_frame = knoema.get('IMFWEO2017Oct', country='914;512;111', subject='lp;ngdp')
+    data_frame = knoema.get('IMFWEO2017Oct', country='Albania;Afghanistan;United States', subject='lp;ngdp')
 
 or::
 
     import knoema
-    data_frame = knoema.get('IMFWEO2017Oct', country=['914','512','111'], subject=['lp','ngdp'])
+    data_frame = knoema.get('IMFWEO2017Oct', country=['Albania','Afghanistan','United States'], subject=['lp','ngdp'])
 
 
 For case when the dimensions of dataset that have multi word names use the next example::
@@ -87,11 +89,18 @@ If specified elements' names contain semicolons you can override default element
         subject='Gross domestic product, constant prices (Percent change)|Gross domestic product per capita, constant prices (Purchasing power parity; 2011 international dollar)',
         separator='|')
 
-
 In addition to the required using of the selections for dimensions, you can additionally specify the period and frequencies in the parameters. For more details, see the example below::
 
     import knoema
     data_frame = knoema.get('IMFWEO2017Oct', country='914;512;111', subject='lp;ngdp', frequency='A', timerange='2007-2017')
+
+Also you can group results by one of dimensions::
+
+    import knoema
+    data_frame_generator = knoema.get('IMFWEO2017Oct', True, group_by='country', country='Albania;Afghanistan;United States', subject='lp;ngdp')
+    for frame in data_frame_generator:
+        data = frame.data
+        metadata = frame.metadata
 
 ******************************************************
 Retrieving series from datasets including metadata
@@ -99,7 +108,7 @@ Retrieving series from datasets including metadata
 By default the function knoema.get returns the one dataframe with data. If you want also get information about metadata(attributes, unit, scale, mnemonics), include the additional parameter in your function, like this::
 
      import knoema
-     data, metadata = knoema.get('IMFWEO2017Oct', True, country=['914','512'], subject='lp')
+     data, metadata = knoema.get('IMFWEO2017Oct', True, country=['Albania', 'Afghanistan'], subject='lp')
      
 The function, in this case, returns two dataframes - one with data, second with metadata.    
 
@@ -110,7 +119,7 @@ You can use transform parameter to apply transformation to requested data, like 
 
 
    import knoema
-   data_frame = knoema.get('IMFWEO2017Oct', country='914', subject='ngdp', transform='PCH')
+   data_frame = knoema.get('IMFWEO2017Oct', country='Afghanistan', subject='ngdp', transform='PCH')
 
 The supported values of transform parameter are the following:
 
@@ -197,9 +206,23 @@ An example of using the search for mnemonics::
     data_frame, metadata = knoema.get('dataset_id',True, mnemonics = ['mnemonic1','mnemonic2'])
 
 If you are downloading data by mnemonics without providing dataset id, you can use this example::
+
     data_frame = knoema.get(mnemonics = 'mnemonic1;mnemonic2')
     data_frame = knoema.get(None, mnemonics = 'mnemonic1;mnemonic2')
     data_frame, metadata = knoema.get(dataset = None, include_metadata = True, mnemonics = ['mnemonic1','mnemonic2'])
+
+******************
+Searching by query
+******************
+You can also make a search for arbitrary query using knoema search engine::
+
+    res = knoema.search('Italy GDP')
+    for series in res.series:
+        print('{} ({})'.format(series.title, series.dataset))
+
+Also every series in res has get() method to load data for it::
+
+    series_data = res[0].get()
 
 *******************************************************
 Possible errors in Knoema package and how to avoid them

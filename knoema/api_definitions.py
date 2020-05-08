@@ -29,6 +29,7 @@ class DimensionModel(object):
         self.key = data['key']
         self.id = data['id']
         self.name = data['name']
+        self.is_geo = data['isGeo'] if 'isGeo' in data else False
 
 
 class Dimension(DimensionModel):
@@ -36,24 +37,29 @@ class Dimension(DimensionModel):
 
     def __init__(self, data):
         super().__init__(data)
-        self.fields = data ['fields']
+        self.fields = data['fields']
         self.items = [DimensionMember(item) for item in data['items']]
 
         # fill maps
         self.key_map = {}
         self.id_map = {}
         self.name_map = {}
+        self.region_map = {}
+        self.ticker_map = {}
         for item in self.items:
             self.key_map[item.key] = item
             self.name_map[item.name.upper()] = item
             if 'id' in item.fields:
                 self.id_map[item.fields['id'].upper()] = item
+            if 'regionid' in item.fields:
+                self.region_map[item.fields['regionid'].upper()] = item
+            if 'ticker' in item.fields:
+                self.ticker_map[item.fields['ticker'].upper()] = item
 
         
     def find_member_by_key(self, member_key):
         """The method searches member of dimension by given member key"""
         return self.key_map.get(member_key)
-
 
     def find_member_by_id(self, member_id):
         """The method searches member of dimension by given member id"""
@@ -62,6 +68,13 @@ class Dimension(DimensionModel):
     def find_member_by_name(self, member_name):
         """The method searches member of dimension by given member name"""
         return self.name_map.get(member_name.upper())
+
+    def find_member_by_regionid(self, member_name):
+        """The method searches member of dimension by given region id"""
+        return self.region_map.get(member_name.upper())
+
+    def find_member_by_ticker(self, member_name):
+        return self.ticker_map.get(member_name.upper())
 
 
 class DateRange(object):
@@ -90,6 +103,7 @@ class Dataset(object):
 
         self.id = data['id']
         self.type = data['type']
+        self.is_remote = data['isRemote'] if 'isRemote' in data else False
         self.dimensions = [DimensionModel(dim) for dim in data['dimensions']]
         self.timeseries_attributes = [TimeSeriesAttribute(attr) for attr in data['timeseriesAttributes']] if 'timeseriesAttributes' in data else []
         self.has_time = self.type == 'Regular' or any(x for x in data['columns'] if x['type'] == 'Date')
@@ -100,6 +114,9 @@ class Dataset(object):
         for dim in self.dimensions:
             if is_equal_strings_ignore_case(dim.name, dim_name):
                 return dim
+
+            if dim.is_geo and is_equal_strings_ignore_case('region', dim_name):
+                return dim
         return None
 
     def find_dimension_by_id(self, dim_id):
@@ -108,6 +125,13 @@ class Dataset(object):
         for dim in self.dimensions:
             if is_equal_strings_ignore_case(dim.id, dim_id):
                 return dim
+
+            if dim.is_geo and is_equal_strings_ignore_case('region', dim_id):
+                return dim
+
+            if is_equal_strings_ignore_case('ticker', dim_id):
+                return dim
+
         return None
 
 class PivotItemMetadata(object):
@@ -352,3 +376,10 @@ class DatasetVerifyResponse(object):
     def __init__(self, data):
         self.status = data['status']
         self.errors = data['errors'] if 'errors' in data else None
+
+class DataFrame(object):
+
+    def __init__(self):
+        self.id = None
+        self.data = None
+        self.metadata = None

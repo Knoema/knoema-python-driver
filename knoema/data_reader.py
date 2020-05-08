@@ -65,7 +65,7 @@ class DataReader(object):
         for dim in self.dimensions:
             names.append(dim.name)
         names.append('Frequency')             
-        return names   
+        return names
 
     def _get_metadata_series(self, resp, names_of_attributes):
         series = {}
@@ -136,6 +136,12 @@ class SelectionDataReader(DataReader):
             if member is None:
                 member = dim.find_member_by_name(value)
 
+            if member is None:
+                member = dim.find_member_by_regionid(value)
+
+            if member is None:
+                member = dim.find_member_by_ticker(value)
+
             if member is None and value.isnumeric():
                 member = dim.find_member_by_key(int(value))
 
@@ -199,21 +205,22 @@ class SelectionDataReader(DataReader):
         else:
             pivot_req.header.append(definition.PivotTimeItem('Time', [], 'AllData'))
 
-        return pivot_req    
+        return pivot_req
 
 class TransformationDataReader(SelectionDataReader):
 
-    def __init__(self, client, dim_values, transform, frequency):
+    def __init__(self, client, dim_values, transform, frequency, group_by = None):
+        if dim_values == None:
+            dim_values = {}
         if transform:
             dim_values['transform'] = transform
         if frequency:
             dim_values['frequency'] = frequency
+        self.group_by = group_by
         super().__init__(client, dim_values)
 
-    def get_pandasframe(self):
+    def get_pandasframe_pivot(self, pivot_resp):
         names_of_dimensions = self._get_dimension_names()
-
-        pivot_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_query())
             
         # create dataframe with data
         series = self._get_data_series(pivot_resp)
@@ -227,6 +234,287 @@ class TransformationDataReader(SelectionDataReader):
         pandas_series_with_attr = self.creates_pandas_series(series_with_attr, {})
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
         return pandas_data_frame, pandas_data_frame_with_attr
+
+    def get_pandasframe(self):
+        pivot_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_query())
+        
+        return self.get_pandasframe_pivot(pivot_resp)
+
+    def _get_time_point_amount(self, start_date, end_date, frequency):
+        count = 0
+        dict_with_delta = {
+            'A': relativedelta(years = 1),
+            'H': relativedelta(months = 6),
+            'Q': relativedelta(months = 3),
+            'FQ': relativedelta(months = 3),
+            'M': relativedelta(months = 1),
+            'W': timedelta(days = 7),
+            'D': timedelta(days = 1)
+        }
+
+        data_begin_val = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S')    
+        data_end_val = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S')
+        if (frequency == "W"):
+            data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
+            data_end_val = data_end_val - timedelta(days = data_end_val.weekday())
+        delta = dict_with_delta[frequency]
+        curr_date_val = data_begin_val
+        while curr_date_val<=data_end_val:
+            curr_date_val += delta
+            count += 1
+                
+        return count
+
+    def _get_part_of_metadata(self, metadata, offset):
+        limit = 50000
+        member_count_limit = 200
+
+        if offset >= len(metadata):
+            return None
+
+        curr_points = 0
+        curr_member_count = 0
+        time_points = 0
+        dim_values = {}
+        index = offset
+        for i in range(offset, len(metadata)):
+            curr_ts = metadata[i]
+            curr_time_points = self._get_time_point_amount(curr_ts['startDate'], curr_ts['endDate'], curr_ts['frequency'])
+            if curr_time_points > time_points:
+                time_points = curr_time_points
+
+            curr_points = time_points
+            curr_member_count = 0
+            for dim in self.dataset.dimensions:
+                dim_id = dim.id
+
+                if dim_id not in curr_ts:
+                    raise ValueError('There is no value for dim: {}'.format(dim_id))
+
+                member_key = str(curr_ts[dim_id]['key'])
+                if dim_id in dim_values:
+                    if member_key not in dim_values[dim_id]:
+                        dim_values[dim_id].append(member_key)
+                else:
+                    dim_values[dim_id] = [member_key]
+
+                curr_points = curr_points * len(dim_values[dim_id])
+                curr_member_count = curr_member_count + len(dim_values[dim_id])
+
+            if curr_points >= limit or curr_member_count >= member_count_limit:
+                break
+
+            index = i
+
+        return metadata[offset:min(index + 1, len(metadata))]
+
+    def _get_series_with_attr(self, series, series_with_attr):
+        res = {}
+        for series_name, _ in series.items():
+            if series_name in series_with_attr:
+                res[series_name] = series_with_attr[series_name]
+
+        return res
+
+    def _get_frequency_for_normalization(self, required_frequency, available_frequency):
+        sorted_frequency = ['A', 'H', 'Q', 'M', 'W', 'D']
+        sorted_available_frequency = []
+        for f in sorted_frequency:
+            if f in available_frequency:
+                sorted_available_frequency.append(f)
+
+        norm_index = sorted_frequency.index(sorted_available_frequency[-1])
+        for f in sorted_available_frequency:
+            if sorted_frequency.index(f) > sorted_frequency.index(required_frequency):
+                norm_index = sorted_frequency.index(f)
+                break
+
+        return sorted_frequency[norm_index]
+
+
+    def _get_all_series_for_group(self, group_name, group_name_index, frequency, series, metadata):
+        series_by_group = {}
+        for series_name, series_item in series.items():
+            if series_name[group_name_index] == group_name:
+                series_by_group[series_name] = series_item
+        
+        available_frequency = {}
+        count = 0
+        for md in metadata:
+            if md[self.group_by]['name'] == group_name:
+                freq = md['frequency']
+                if freq not in available_frequency:
+                    available_frequency[freq] = 0
+                    
+                available_frequency[freq] += 1
+                count += 1
+
+        if frequency == None:
+            if len(series_by_group.keys()) == count:
+                return series_by_group
+
+        if len(available_frequency.keys()) == 0:
+            return None
+
+        norm_frequency = frequency
+        if frequency not in available_frequency.keys():
+            norm_frequency = self._get_frequency_for_normalization(frequency, available_frequency)
+        
+        if len(series_by_group.keys()) == available_frequency[norm_frequency]:
+                return series_by_group
+
+        return None
+
+    def get_pandasframe_by_metadata(self, metadata, timerange):
+        names_of_dimensions = self._get_dimension_names()
+
+        series = {}
+        series_with_attr = {}
+        offset = 0
+        while True:
+            metadata_part = self._get_part_of_metadata(metadata, offset)
+            if metadata_part == None:
+                break
+
+            offset += len(metadata_part)
+
+            dim_values = {}
+            for item in metadata_part:
+                for dim in self.dataset.dimensions:
+                    dim_id = dim.id
+
+                    if dim_id not in item:
+                        raise ValueError('There is no value for dim: {}'.format(dim_id))
+
+                    member_key = str(item[dim_id]['key'])
+                    if dim_id in dim_values:
+                        if member_key not in dim_values[dim_id]:
+                            dim_values[dim_id].append(member_key)
+                    else:
+                        dim_values[dim_id] = [member_key]
+
+            if timerange != None:
+                dim_values['timerange'] = timerange
+            if 'transform' in self.dim_values:
+                dim_values['transform'] = self.dim_values['transform']
+            if 'frequency'in self.dim_values:
+                dim_values['frequency'] = self.dim_values['frequency']
+
+            self.dim_values = dim_values
+            pivot_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_query())
+
+            part_series = self._get_data_series(pivot_resp)
+            series.update(part_series)
+
+            if self.include_metadata:
+                part_series_with_attr = self._get_metadata_series(pivot_resp)
+                series_with_attr.update(part_series_with_attr)
+
+        pandas_series = self.creates_pandas_series(series, {})
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
+        if not self.include_metadata:
+            return pandas_data_frame
+
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, {})
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        return pandas_data_frame, pandas_data_frame_with_attr
+
+    def get_pandasframe_by_metadata_grouped(self, metadata, timerange):
+        names_of_dimensions = self._get_dimension_names()
+
+        series = {}
+        series_with_attr = {}
+        offset = 0
+        while True:
+            metadata_part = self._get_part_of_metadata(metadata, offset)
+            if metadata_part == None:
+                break
+
+            offset += len(metadata_part)
+
+            dim_values = {}
+            for item in metadata_part:
+                for dim in self.dataset.dimensions:
+                    dim_id = dim.id
+
+                    if dim_id not in item:
+                        raise ValueError('There is no value for dim: {}'.format(dim_id))
+
+                    member_key = str(item[dim_id]['key'])
+                    if dim_id in dim_values:
+                        if member_key not in dim_values[dim_id]:
+                            dim_values[dim_id].append(member_key)
+                    else:
+                        dim_values[dim_id] = [member_key]
+
+            frequency = None
+            if timerange != None:
+                dim_values['timerange'] = timerange
+            if 'transform' in self.dim_values:
+                dim_values['transform'] = self.dim_values['transform']
+            if 'frequency'in self.dim_values:
+                frequency = self.dim_values['frequency']
+                dim_values['frequency'] = self.dim_values['frequency']
+
+            self.dim_values = dim_values
+            pivot_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_query())
+
+            part_series = self._get_data_series(pivot_resp)
+            series.update(part_series)
+
+            if self.include_metadata:
+                part_series_with_attr = self._get_metadata_series(pivot_resp)
+                series_with_attr.update(part_series_with_attr)
+
+            group_name_index = -1
+            for i in range(len(self.dataset.dimensions)):
+                if self.group_by == self.dataset.dimensions[i].id or self.group_by == self.dataset.dimensions[i].name:
+                    self.group_by = self.dataset.dimensions[i].id
+                    group_name_index = i
+                    break
+
+            groups_to_delete = []
+            groups_checked = []
+            for series_name, series_item in series.items():
+                group_name = series_name[group_name_index]
+
+                if group_name in groups_to_delete:
+                    continue
+                if group_name in groups_checked:
+                    continue
+
+                all_series_by_group = self._get_all_series_for_group(group_name, group_name_index, frequency, series, metadata)
+                if all_series_by_group != None:
+                    groups_to_delete.append(group_name)
+                    all_panda_series_by_group = self.creates_pandas_series(all_series_by_group, {})
+                    data_frame = definition.DataFrame()
+                    data_frame.id = group_name
+                    data_frame.data = self.create_pandas_dataframe(all_panda_series_by_group, names_of_dimensions)
+
+                    if self.include_metadata:
+                        all_series_with_attr_by_group = self._get_series_with_attr(all_series_by_group, series_with_attr)
+                        all_pandes_series_with_attr_by_group = self.creates_pandas_series(all_series_with_attr_by_group, {})
+                        data_frame.metadata = self.create_pandas_dataframe(all_pandes_series_with_attr_by_group, names_of_dimensions)
+                        
+                    yield data_frame
+                else:
+                    groups_checked.append(group_name)
+
+            left_series = {}
+            for series_name, series_item in series.items():
+                group_name = series_name[group_name_index]
+                if group_name not in groups_to_delete:
+                    left_series[series_name] = series_item
+                
+            series = left_series
+
+            left_series_with_attr = {}
+            for series_name, series_item in series_with_attr.items():
+                group_name = series_name[group_name_index]
+                if group_name not in groups_to_delete:
+                    left_series_with_attr[series_name] = series_item
+                
+            series_with_attr = left_series_with_attr
 
     def _get_series_with_metadata(self, series_point, resp):
         names = []
@@ -389,6 +677,7 @@ class StreamingDataReader(SelectionDataReader):
             'A': relativedelta(years = 1),
             'H': relativedelta(months = 6),
             'Q': relativedelta(months = 3),
+            'FQ': relativedelta(months = 3),
             'M': relativedelta(months = 1),
             'W': timedelta(days = 7),
             'D': timedelta(days = 1)}
@@ -414,6 +703,14 @@ class StreamingDataReader(SelectionDataReader):
                 i += 1
             series[series_name] = KnoemaSeries(series_name,values,index)
         return series
+
+    def get_series_metadata(self):
+        self._load_dimensions()
+        pivot_req = self._create_pivot_request()
+
+        data_streaming = self.client.get_data_raw(pivot_req, True)
+        
+        return data_streaming.series
 
     def get_pandasframe(self):
         self._load_dimensions()
@@ -523,7 +820,6 @@ class MnemonicsDataReader(DataReader):
             pivot_resp = item.pivot
             if pivot_resp is None:
                 continue
-            mnemonics = item.mnemonics
             dataset_id = pivot_resp.dataset
             if dataset_id  not in dict_datasets:
                 dataset = self.client.get_dataset(dataset_id)

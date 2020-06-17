@@ -291,7 +291,7 @@ class UploadVerifyResponse(object):
 class DatasetUpload(object):
     """The class contains request for UploadSubmit"""
 
-    def __init__(self, verify_result, upload_result, dataset=None, public = False):
+    def __init__(self, verify_result, upload_result, dataset = None, public = False, name = None):
         self.dataset = dataset
 
         self.upload_format_type = verify_result.upload_format_type
@@ -302,7 +302,7 @@ class DatasetUpload(object):
         dataset_details = verify_result.metadata_details
         self.name = dataset_details.dataset_name if dataset_details and dataset_details.dataset_name else None
         if self.name is None and dataset is None:
-            self.name = 'New dataset'
+            self.name = name if name != None else 'New dataset'
         self.description = dataset_details.description if dataset_details else None
         self.source = dataset_details.source if dataset_details else None
         self.publication_date = dataset_details.publication_date if dataset_details else None

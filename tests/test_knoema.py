@@ -6,6 +6,7 @@ import knoema
 import urllib
 import pandas
 import os
+import numpy
 
 class TestKnoemaClient(unittest.TestCase):
     """This is class with knoema client unit tests"""
@@ -29,11 +30,11 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('Albania', 'Gross domestic product, current prices (National currency)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 18.489)
 
         indx = data_frame.index[42]
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 2292.486)
 
     def test_getdata_multiseries_by_member_id(self):
@@ -47,11 +48,11 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 2862.475)
 
         indx = data_frame.index[42]
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 23760.331)
 
     def test_getdata_multiseries_by_member_name(self):
@@ -64,11 +65,11 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 2862.475)
 
         indx = data_frame.index[42]
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 23760.331)
 
     def test_getdata_multiseries_by_member_id_range(self):
@@ -80,11 +81,11 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 18036.650)
 
         indx = data_frame.last_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 22063.044)
 
     def test_getdata_singleseries_difffrequencies_by_member_id(self):
@@ -95,18 +96,18 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'M')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, -5.0)
 
-        value = data_frame.get_value(datetime.datetime(2017, 5, 1), sname)
+        value = data_frame.at[datetime.datetime(2017, 5, 1), sname]
         self.assertEqual(value, 2.0)
 
         indx = data_frame.first_valid_index()
         sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'Q')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, -5.233333)
 
-        value = data_frame.get_value(datetime.datetime(2017, 1, 1), sname)
+        value = data_frame.at[datetime.datetime(2017, 1, 1), sname]
         self.assertEqual(value, 1.566667)
 
     def test_getdata_multiseries_singlefrequency_by_member_id(self):
@@ -116,7 +117,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 2)
 
         sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'Q')
-        value = data_frame.get_value(datetime.datetime(2017, 1, 1), sname)
+        value = data_frame.at[datetime.datetime(2017, 1, 1), sname]
         self.assertEqual(value, 1.566667)
 
     def test_getdata_multiseries_multifrequency_by_member_id(self):
@@ -126,7 +127,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 3)
 
         sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'M')
-        value = data_frame.get_value(datetime.datetime(2017, 3, 1), sname)
+        value = data_frame.at[datetime.datetime(2017, 3, 1), sname]
         self.assertEqual(value, 2.4)
 
     def test_getdata_multiseries_multifrequency_by_member_id_range(self):
@@ -136,7 +137,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 3)
 
         sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'M')
-        value = data_frame.get_value(datetime.datetime(2012, 12, 1), sname)
+        value = data_frame.at[datetime.datetime(2012, 12, 1), sname]
         self.assertEqual(value, -12.4)
 
     def test_none_dataset(self):
@@ -204,7 +205,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 4)
 
         sname = ('Albania', 'FGP', 'D')
-        value = data_frame.get_value('All time', sname)
+        value = data_frame.at['All time', sname]
         self.assertEqual(value, 8.0)
 
     def test_get_data_from_dataset_with_multiword_dimnames(self):
@@ -225,11 +226,11 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows - Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
 
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 31666.667, 3)
 
         indx = data_frame.last_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 22267.638, 3)
 
     def test_get_data_from_flat_dataset_with_multi_measures(self):
@@ -247,7 +248,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 1)
 
         sname = ('Albania', 'Ministry of Finance', 'Albania', 'B LOAN', 'EFFECTIVE', 'EUR', 'Interest Rate', 'D')
-        value = data_frame.get_value('All time', sname)
+        value = data_frame.at['All time', sname]
         self.assertEqual(value, 0.0)
 
     def test_get_data_from_flat_dataset_without_time(self):
@@ -260,7 +261,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 1)
 
         sname = ('Airports', 'Bakel Airport')
-        value = data_frame.get_value('All time', sname)
+        value = data_frame.at['All time', sname]
         self.assertEqual(value, 1.0)
 
     def test_get_data_from_flat_dataset_with_datecolumn(self):
@@ -271,7 +272,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 5)
 
         sname = ('Albania', 'MINISTRY OF FINANCE', 'Albania', 'FSL', 'Disbursing', 'Original Principal Amount ($)', 'A')
-        value = data_frame.get_value('2013-01-01', sname)
+        value = data_frame.at['2013-01-01', sname]
         self.assertEqual(value, 40000000.0)
 
     def test_incorrect_dataset_id(self):
@@ -291,11 +292,11 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 2862.475)
 
         indx = data_frame.last_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 23760.331)
 
     def test_get_data_from_dataset_by_dim_ids(self):
@@ -316,11 +317,11 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows - Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
 
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 31666.667, 3)
 
         indx = data_frame.last_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 22267.638, 3)
 
 
@@ -343,11 +344,11 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Australia', 'WORLD', 'Directional principle: Inward', 'FDI financial flows - Total', 'All resident units', 'Net', 'Immediate counterpart (Immediate investor or immediate host)', 'US Dollar', 'A')
 
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 31666.667, 3)
 
         indx = data_frame.last_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 22267.638, 3)
 
     def test_delete_dataset_negative(self):
@@ -376,15 +377,15 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
         indx = data.first_valid_index()
         sname = ('Albania', 'Population (Persons)', 'A')
-        value = data.get_value(indx, sname)
+        value = data.at[indx, sname]
         self.assertEqual(value, 2.762)
         
         indx = metadata.first_valid_index()
-        value = metadata.get_value(indx, sname)
+        value = metadata.at[indx, sname]
         self.assertEqual(value, '914')
 
         indx = data.last_valid_index()
-        value = data.get_value(indx, sname)
+        value = data.at[indx, sname]
         self.assertEqual(value, 2.858)
 
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata(self):
@@ -405,11 +406,11 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Australia','WORLD','Directional principle: Inward','FDI financial flows - Total','All resident units','Net','Immediate counterpart (Immediate investor or immediate host)','US Dollar','A')
 
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 31666.667, 3)
 
         indx = data_frame.last_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 22267.638, 3)   
 
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata_transform(self):
@@ -431,11 +432,11 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('Australia','WORLD','Directional principle: Inward','FDI financial flows - Total','All resident units','Net','Immediate counterpart (Immediate investor or immediate host)','US Dollar','A')
 
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 31666.667, 3)
 
         indx = data_frame.last_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 22267.638, 3)
 
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata_and_mnemomics(self):
@@ -456,16 +457,16 @@ class TestKnoemaClient(unittest.TestCase):
         sname = ('China','GDP DEFLATOR (% CHANGE, AV)','Not seasonally adjusted', 'Average','A')
 
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 2.0)
 
         indx = metadata.first_valid_index()
-        value = metadata.get_value(indx, sname)
+        value = metadata.at[indx, sname]
         self.assertAlmostEqual(value, 'CN')
 
-        self.assertAlmostEqual(metadata.get_value('Unit', sname), 'Unit')
-        self.assertAlmostEqual(metadata.get_value('Scale', sname), 1.0)
-        self.assertAlmostEqual(metadata.get_value('Mnemonics', sname), 'RRRRRRRRR')
+        self.assertAlmostEqual(metadata.at['Unit', sname], 'Unit')
+        self.assertAlmostEqual(metadata.at['Scale', sname], 1.0)
+        self.assertAlmostEqual(metadata.at['Mnemonics', sname], 'RRRRRRRRR')
        
     def test_get_data_from_flat_dataset_with_multi_measures_and_metadata(self):
         """The method is testing load data from flat dataset with with mulitple measures and metadata"""
@@ -484,11 +485,11 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.shape[1], 1)
 
         sname = ('Albania', 'Ministry of Finance', 'Albania', 'B LOAN', 'EFFECTIVE', 'EUR', 'Interest Rate', 'D')
-        value = data_frame.get_value('All time', sname)
+        value = data_frame.at['All time', sname]
         self.assertEqual(value, 0.0)
-        self.assertEqual(metadata.get_value('Country Country Code',sname),'AL')
-        self.assertEqual(metadata.get_value('Scale',sname),1)
-        self.assertEqual(metadata.get_value('Unit',sname),'None')
+        self.assertEqual(metadata.at['Country Country Code',sname],'AL')
+        self.assertEqual(metadata.at['Scale',sname],1)
+        self.assertEqual(metadata.at['Unit',sname],'None')
 
     def test_get_data_from_flat_dataset_without_time_and_with_metadata(self):
         """The method is testing load data from flat dataset without time and with metadata"""
@@ -502,22 +503,22 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.shape[1], 1)
 
         sname = ('Airports', 'Bakel Airport')
-        value = data_frame.get_value('All time', sname)
+        value = data_frame.at['All time', sname]
         self.assertEqual(value, 1.0)   
-        self.assertEqual(metadata.get_value('Object Name Latitude',sname),'14.847256')
-        self.assertEqual(metadata.get_value('Object Name Longitude',sname),'-12.468264')
+        self.assertEqual(metadata.at['Object Name Latitude',sname],'14.847256')
+        self.assertEqual(metadata.at['Object Name Longitude',sname],'-12.468264')
 
-        self.assertEqual(metadata.get_value('Scale',sname),1)
-        self.assertEqual(metadata.get_value('Unit',sname),'# of records')
+        self.assertEqual(metadata.at['Scale',sname],1)
+        self.assertEqual(metadata.at['Unit',sname],'# of records')
 
     def test_weekly_frequency(self):
         """The method is testing load data from regular dataset by weekly frequency"""
    
         data = knoema.get('WOERDP2015', location='China', Indicator='EMBI Sovereign Spreads (Basis points)', frequency='W')
         sname = ('China', 'EMBI Sovereign Spreads (Basis points)', 'W')
-        value = data.get_value(datetime.datetime(2010, 1, 4), sname)
+        value = data.at[datetime.datetime(2010, 1, 4), sname]
         self.assertEqual(value, 44)
-        value = data.get_value(datetime.datetime(2015, 9, 7), sname)
+        value = data.at[datetime.datetime(2015, 9, 7), sname]
         self.assertEqual(value, 183)
 
     def test_incorrect_host_knoema_get(self):
@@ -557,11 +558,11 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 10.861)
 
         indx = data_frame.index[38]
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 0.048)
 
     def test_get_data_with_partial_selection_with_metadata(self):
@@ -571,9 +572,9 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
         sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')
-        self.assertEqual(metadata.get_value('Country Id',sname),'158')
-        self.assertEqual(metadata.get_value('Subject Id',sname),'FLIBOR6')
-        self.assertEqual(metadata.get_value('Unit',sname),'Percent')
+        self.assertEqual(metadata.at['Country Id',sname],'158')
+        self.assertEqual(metadata.at['Subject Id',sname],'FLIBOR6')
+        self.assertEqual(metadata.at['Unit',sname],'Percent')
  
     def test_get_data_with_partial_selection_with_metadata_transform(self):
         """The method is testing getting series with partial selection"""
@@ -582,9 +583,9 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(metadata.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
         sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')
-        self.assertEqual(metadata.get_value('Country Id',sname),'158')
-        self.assertEqual(metadata.get_value('Subject Id',sname),'FLIBOR6')
-        self.assertEqual(metadata.get_value('Unit',sname),'Percent')
+        self.assertEqual(metadata.at['Country Id',sname],'158')
+        self.assertEqual(metadata.at['Subject Id',sname],'FLIBOR6')
+        self.assertEqual(metadata.at['Unit',sname],'Percent')
  
     def test_search_by_mnemonics_data(self):
         """The method is testing searching by mnemonics"""
@@ -593,7 +594,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 1)
         sname = ('512NGDP_A_in_test_dataset')
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 0)
 
     def test_search_by_mnemonics_with_metadata(self):
@@ -603,14 +604,14 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 1)
         sname = ('512NGDP_A_in_test_dataset')
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 0)
         self.assertEqual(metadata.shape[1], 1)
         self.assertEqual(metadata.shape[0], 5)
-        self.assertEqual(metadata.get_value('Country Id',sname),'512')
-        self.assertEqual(metadata.get_value('Indicator Id',sname),'NGDP')
-        self.assertEqual(metadata.get_value('Unit',sname),'Number')       
-        self.assertEqual(metadata.get_value('Mnemonics',sname),'512NGDP_A_in_test_dataset')  
+        self.assertEqual(metadata.at['Country Id',sname],'512')
+        self.assertEqual(metadata.at['Indicator Id',sname],'NGDP')
+        self.assertEqual(metadata.at['Unit',sname],'Number')
+        self.assertEqual(metadata.at['Mnemonics',sname],'512NGDP_A_in_test_dataset')
 
     def test_search_by_mnemonics_data_by_all_datasets(self):
         """The method is testing searching by mnemonics by all dataset and returns data"""
@@ -618,7 +619,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 2)
         sname = ('512NGDP_A_in_test_dataset')
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 0)
 
     def test_search_by_mnemonics_with_metadata_by_all_datasets(self):
@@ -627,25 +628,25 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[1], 2)
         sname = ('512NGDP_A_in_test_dataset')
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 0)
-        self.assertEqual(metadata.get_value('Country Id',sname),'512')
-        self.assertEqual(metadata.get_value('Indicator Id',sname),'NGDP')
-        self.assertEqual(metadata.get_value('Unit',sname),'Number')       
-        self.assertEqual(metadata.get_value('Mnemonics',sname),'512NGDP_A_in_test_dataset')  
+        self.assertEqual(metadata.at['Country Id',sname],'512')
+        self.assertEqual(metadata.at['Indicator Id',sname],'NGDP')
+        self.assertEqual(metadata.at['Unit',sname],'Number')
+        self.assertEqual(metadata.at['Mnemonics',sname],'512NGDP_A_in_test_dataset')
 
     def test_search_by_mnemonics_with_metadata_by_all_datasets_transform(self):
         """The method is testing searching by mnemonics by all dataset and returns data and metadata"""
-        data_frame, metadata = knoema.get(None, True, mnemonics='512NGDP_Q_in_test_dataset;512NGDP', transform='PCH', frequency='A')
+        data_frame, metadata = knoema.get(None, True, mnemonics='512NGDP_R;512NGDP', transform='PCH', frequency='A')
         self.assertEqual(data_frame.shape[1], 2)
-        sname = ('512NGDP_Q_in_test_dataset')
+        sname = ('512NGDP_R')
         indx = data_frame.first_valid_index()
-        value = data_frame.get_value(indx, sname)
-        self.assertEqual(value, 25.0)
-        self.assertEqual(metadata.get_value('Country Id',sname),'512')
-        self.assertEqual(metadata.get_value('Indicator Id',sname),'NGDP')
-        self.assertEqual(metadata.get_value('Unit',sname),'%')       
-        self.assertEqual(metadata.get_value('Mnemonics',sname),'512NGDP_Q_in_test_dataset')  
+        value = data_frame.at[indx, sname]
+        self.assertEqual(value, 8.69275111845198)
+        self.assertEqual(metadata.at['Country Id',sname],'512')
+        self.assertEqual(metadata.at['Indicator Id',sname],'NGDP_R')
+        self.assertEqual(metadata.at['Unit',sname],'%')
+        self.assertEqual(metadata.at['Mnemonics',sname],'512NGDP_R')
     
     def test_get_all_series_from_dataset(self):
         """The method is testing getting all series from dataset"""
@@ -655,7 +656,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('Afghanistan', 'Gross domestic product, current prices', 'M')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 26.02858277)
 
     def test_with_empty_attributes_in_the_dimensions(self):
@@ -668,19 +669,19 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
         indx = data.first_valid_index()
         sname = ('Albania', 'Population (Persons)', 'A')
-        value = data.get_value(indx, sname)
+        value = data.at[indx, sname]
         self.assertEqual(value, 2.762)
         
-        self.assertEqual(metadata.get_value('Country Id',sname),'914')
-        self.assertEqual(metadata.get_value('Subject Id',sname),'LP')
-        self.assertEqual(metadata.get_value('Subject SubjectDescription',sname),None)
-        self.assertEqual(metadata.get_value('Subject SubjectNotes',sname),None)
-        self.assertEqual(metadata.get_value('Subject Relevant',sname),None)
-        self.assertEqual(metadata.get_value('Unit',sname),'Persons (Millions)')       
-        self.assertEqual(metadata.get_value('Mnemonics',sname),None)
+        self.assertEqual(metadata.at['Country Id',sname],'914')
+        self.assertEqual(metadata.at['Subject Id',sname],'LP')
+        self.assertEqual(metadata.at['Subject SubjectDescription',sname],None)
+        self.assertEqual(metadata.at['Subject SubjectNotes',sname],None)
+        self.assertEqual(metadata.at['Subject Relevant',sname],None)
+        self.assertEqual(metadata.at['Unit',sname],'Persons (Millions)')
+        self.assertEqual(metadata.at['Mnemonics',sname],None)
 
         indx = data.last_valid_index()
-        value = data.get_value(indx, sname)
+        value = data.at[indx, sname]
         self.assertEqual(value, 2.856)
         
     def test_with_empty_attributes_in_the_dimensions_transform(self):
@@ -693,19 +694,19 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
         indx = data.first_valid_index()
         sname = ('Albania', 'Population (Persons)', 'A')
-        value = data.get_value(indx, sname)
+        value = data.at[indx, sname]
         self.assertEqual(value, 2.762)
         
-        self.assertEqual(metadata.get_value('Country Id',sname),'914')
-        self.assertEqual(metadata.get_value('Subject Id',sname),'LP')
-        self.assertEqual(metadata.get_value('Subject SubjectDescription',sname),None)
-        self.assertEqual(metadata.get_value('Subject SubjectNotes',sname),None)
-        self.assertEqual(metadata.get_value('Subject Relevant',sname),None)
-        self.assertEqual(metadata.get_value('Unit',sname),'Persons (Millions)')       
-        self.assertEqual(metadata.get_value('Mnemonics',sname),None)
+        self.assertEqual(metadata.at['Country Id',sname],'914')
+        self.assertEqual(metadata.at['Subject Id',sname],'LP')
+        self.assertEqual(metadata.at['Subject SubjectDescription',sname],None)
+        self.assertEqual(metadata.at['Subject SubjectNotes',sname],None)
+        self.assertEqual(metadata.at['Subject Relevant',sname],None)
+        self.assertEqual(metadata.at['Unit',sname],'Persons (Millions)')
+        self.assertEqual(metadata.at['Mnemonics',sname],None)
 
         indx = data.last_valid_index()
-        value = data.get_value(indx, sname)
+        value = data.at[indx, sname]
         self.assertEqual(value, 2.856)
 
         
@@ -725,11 +726,11 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('United States', 'GDP growth (annual %)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 2.29999999999968)
 
         indx = data_frame.index[57]
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 2.92732272821085)
 
 
@@ -747,7 +748,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('Albania', 'Gross domestic product per capita, constant prices (Purchasing power parity; 2011 international dollar)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 4832.599)
 
     def test_getdata_default_web_separator(self):
@@ -764,7 +765,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('Albania', 'Gross domestic product per capita, constant prices (Purchasing power parity; 2011 international dollar)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 4832.599)
 
     def test_getdata_region_dim_region_id(self):
@@ -780,7 +781,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('Afghanistan', 'Gross domestic product, constant prices (Percent change)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 8.692)
 
     def test_getdata_region_as_dim_region_id(self):
@@ -796,7 +797,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.first_valid_index()
         sname = ('Afghanistan', 'Gross domestic product, constant prices (Percent change)', 'A')
-        value = data_frame.get_value(indx, sname)
+        value = data_frame.at[indx, sname]
         self.assertEqual(value, 8.692)
 
     def test_search_wrapper_search_for_timeseries(self):
@@ -861,27 +862,48 @@ class TestKnoemaClient(unittest.TestCase):
 
         data_frame = knoema.get('ADFA2020', company='GRUBHUB', indicator='Sales', frequency='FQ')
         self.assertIs(type(data_frame), pandas.core.frame.DataFrame)
-        self.assertEqual(data_frame.shape[0], 26)
+        self.assertEqual(data_frame.shape[0], 27)
         self.assertEqual(data_frame.shape[1], 1)
 
     def test_aggregations(self):
         """Testing aggregations disaggregation"""
 
         frame = knoema.get('ADSbP2020', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
-        self.assertEqual(frame.shape[0], 821)
+        self.assertEqual(frame.shape[0], 822)
         self.assertEqual(frame.shape[1], 1)
 
         generator = knoema.get('ADSbP2020', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
         for frame in generator:
-            self.assertEqual(frame.data.shape[0], 821)
+            self.assertEqual(frame.data.shape[0], 822)
             self.assertEqual(frame.data.shape[1], 1)
             
 
         frame = knoema.get('ADSbP2020', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
-        self.assertEqual(frame.shape[0], 9)
+        self.assertEqual(frame.shape[0], 10)
         self.assertEqual(frame.shape[1], 1)
 
         generator = knoema.get('ADSbP2020', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
         for frame in generator:
-            self.assertEqual(frame.data.shape[0], 9)
+            self.assertEqual(frame.data.shape[0], 10)
             self.assertEqual(frame.data.shape[1], 1)
+
+    def test_upload_generated_frames(self):
+        tuples = list(zip(*[['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux'], ['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two']]))
+        index = pandas.MultiIndex.from_tuples(tuples, names=['first', 'second'])
+        dates = pandas.date_range('1/1/2000', periods=8)
+        frame = pandas.DataFrame(numpy.random.randn(8, 8), index=dates, columns=index)
+        res = knoema.upload(frame, name = 'Test dataset')
+        self.assertIs(type(res), str)
+        self.assertEqual(len(res), 7)
+
+        frame = pandas.DataFrame(numpy.random.randn(8, 4), index=dates, columns=['A', 'B', 'C', 'D'])
+        res = knoema.upload(frame, name = 'Test dataset')
+        self.assertIs(type(res), str)
+        self.assertEqual(len(res), 7)
+
+    def test_upload_frames_from_existing_datasets(self):
+        frame = knoema.get('IMFWEO2017Oct', country='Albania;United States;Italy', subject='ngdp', timerange = '2015-2020')
+        res = knoema.upload(frame, name = 'Test dataset')
+
+        self.assertIs(type(res), str)
+        self.assertEqual(len(res), 7)

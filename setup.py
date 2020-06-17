@@ -7,7 +7,7 @@ def readme():
 setup(
   name = 'knoema',
   packages = ['knoema'],
-  version = '1.1',
+  version = '1.2',
   description = "Official Python package for Knoema's API",
   long_description=readme(),
   author = 'Knoema',
@@ -16,5 +16,5 @@ setup(
   url = 'https://github.com/Knoema/knoema-python-driver',
   keywords = ['API', 'knoema'],
   classifiers = ['Development Status :: 5 - Production/Stable', 'Programming Language :: Python :: 3 :: Only'],
-  install_requires=['pandas']
+  install_requires=['pandas', 'pytest-shutil', 'python-csv']
 )

@@ -6,6 +6,7 @@ from knoema.data_reader import MnemonicsDataReader, StreamingDataReader, Transfo
 from knoema.api_definitions import is_equal_strings_ignore_case
 from knoema.api_definitions_sema import Company
 from knoema.api_definitions_search import SearchResults
+from knoema.upload_frame import FrameTransformerFactory, FileLayerWrapper
 
 def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, separator = None, group_by = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
@@ -110,12 +111,20 @@ def search(query):
 
     return search_results
 
-def upload(file_path, dataset=None, public=False):
+def upload(file_path_or_frame, dataset=None, public=False, name = None):
     """Use this function to upload data to Knoema dataset."""
 
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
-    return client.upload(file_path, dataset, public)
+
+    if isinstance(file_path_or_frame, str):
+        return client.upload(file_path_or_frame, dataset, public)
+
+    frame_transformer = FrameTransformerFactory(file_path_or_frame).get_transformer()
+
+    with FileLayerWrapper() as fw:
+        file = frame_transformer.prepare(fw, dataset, name)
+        return client.upload(file, dataset, public, name)
 
 def delete(dataset):
     """Use this function to delete dataset by it's id."""

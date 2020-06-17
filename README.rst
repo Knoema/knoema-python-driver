@@ -153,15 +153,16 @@ Uploading Dataset
 ******************
 In order to update the dataset, you must have the access rights to do this. For this, you need to specify the appropriate parameters app_id and app_secret. See section *Configuration*.
 
-if you have access rights and file for uploading, use the next code::
+if you have access rights and file or pandas dataframe for uploading, use the next code::
 
-    knoema.upload(file_path, dataset=None, public=False)
+    knoema.upload(file_path_or_frame, dataset=None, public=False, name=None)
 
 where:
 
-* file_path - the string variable which provides path to the file which will be uploaded to the dataset,
+* file_path_or_frame - the string variable which provides path to the file which will be uploaded to the dataset or pandas dataframe,
 * dataset - the string variable which provides id of the dataset that is going to be updated from the file. If dataset is None then new dataset will be created  based on the file,
-* public - the boolean variable which makes dataset public if public flag is true. Default value is false.
+* public - the boolean variable which makes dataset public if public flag is true. Default value is false,
+* name - the string variable which provides name of the dataset
 
 The function returns dataset id if upload is succesfull and raise an exception otherwise.
 

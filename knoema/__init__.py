@@ -22,6 +22,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
 
     frequency = None
     timerange = None
+    has_agg = False
     for name, value in dim_values.copy().items():
         if is_equal_strings_ignore_case(name, 'frequency'):
             frequency = value
@@ -34,6 +35,9 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         if is_equal_strings_ignore_case(name, 'timerange'):
             timerange = value
             continue
+
+        if len(value) > 0 and value[0].startswith('@'):
+            has_agg = True
 
     if mnemonics:
         reader =  MnemonicsDataReader(client, mnemonics, transform, frequency)
@@ -48,7 +52,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
     if not dataset:
         raise ValueError('Dataset id is not specified')
 
-    if ds.type == 'Regular' and (transform or ds.is_remote or group_by):
+    if ds.type == 'Regular' and not has_agg and group_by:
         metadata_reader =  StreamingDataReader(client, dim_values)
         metadata_reader.dataset = ds
         if separator:
@@ -60,21 +64,24 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         reader.include_metadata = include_metadata
         reader.dataset = ds
 
-        if group_by:
-            return reader.get_pandasframe_by_metadata_grouped(metadata, timerange)
-        
-        return reader.get_pandasframe_by_metadata(metadata, timerange)
+        return reader.get_pandasframe_by_metadata_grouped(metadata, timerange)
+
+    reader = None
+    if ds.type == 'Regular' and not ds.is_remote:
+        if frequency != None:
+            dim_values['frequency'] = frequency
+
+        reader = StreamingDataReader(client, dim_values, transform)
     else:
-        reader =  TransformationDataReader(client, dim_values, transform, frequency, None) if ds.type != 'Regular' or frequency or transform\
-            else StreamingDataReader(client, dim_values)
+        reader = TransformationDataReader(client, dim_values, transform, frequency, None)
 
-        reader.include_metadata = include_metadata
-        reader.dataset = ds
+    reader.include_metadata = include_metadata
+    reader.dataset = ds
 
-        if separator:
-            reader.separator = separator
+    if separator:
+        reader.separator = separator
             
-        return reader.get_pandasframe()
+    return reader.get_pandasframe()
 
 def ticker(ticker):
     """Use this function to get data about company"""

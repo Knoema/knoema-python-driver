@@ -122,9 +122,10 @@ class DataReader(object):
 
 class SelectionDataReader(DataReader):
 
-    def __init__(self, client, dim_values):
+    def __init__(self, client, dim_values, transform = None):
         super().__init__(client)
         self.dim_values = dim_values
+        self.transform = transform
 
     def _get_dim_members(self, dim, splited_values):
         members = []
@@ -171,6 +172,7 @@ class SelectionDataReader(DataReader):
 
         filter_dims = []
         time_range = None
+        first = True
         for name, value in self.dim_values.items():
             if definition.is_equal_strings_ignore_case(name, 'timerange'):
                 time_range = value
@@ -178,7 +180,9 @@ class SelectionDataReader(DataReader):
 
             splited_values = value.split(self.separator) if isinstance(value, str) else value
             if definition.is_equal_strings_ignore_case(name, 'frequency'):
-                pivot_req.frequencies = splited_values
+                available_frequency = self.client.get_daterange(self.dataset.id).frequencies
+                pivot_req.normalized_frequencies = splited_values
+                pivot_req.frequencies = available_frequency
                 continue
 
             dim = self._find_dimension(name)
@@ -192,11 +196,21 @@ class SelectionDataReader(DataReader):
                 if dimension.id == dim.id:
                     dim = dimension
                     break
+
+            aggregations = None
+            if len(splited_values) > 0 and splited_values[0].startswith('@'):
+                aggregations = splited_values[0][1:]
+                splited_values = splited_values[1:]
+
             members = self._get_dim_members(dim, splited_values)
-            if not members:
+            if not members and aggregations == None:
                 raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
-            pivot_req.stub.append(definition.PivotItem(dim.id, members))
+            if first and self.transform != None:
+                pivot_req.stub.append(definition.PivotItem(dim.id, members, transform = self.transform, aggregations = aggregations))
+                first = False
+            else:
+                pivot_req.stub.append(definition.PivotItem(dim.id, members, aggregations = aggregations))
 
         self._add_full_selection_by_empty_dim_values(filter_dims, pivot_req)
 
@@ -262,6 +276,10 @@ class TransformationDataReader(SelectionDataReader):
         while curr_date_val<=data_end_val:
             curr_date_val += delta
             count += 1
+
+        # we have to increase amount of points for FQ freq because of export from OASIS issue
+        if frequency == 'FQ':
+           count += 10
                 
         return count
 
@@ -627,8 +645,8 @@ class TransformationDataReader(SelectionDataReader):
 
 class StreamingDataReader(SelectionDataReader):
 
-    def __init__(self, client, dim_values):
-        super().__init__(client, dim_values)
+    def __init__(self, client, dim_values, transform = None):
+        super().__init__(client, dim_values, transform)
     
     def _get_series_name(self, series_point):
         names = []
@@ -684,8 +702,9 @@ class StreamingDataReader(SelectionDataReader):
         for series_point in resp.series:  
             all_values = series_point['values']  
             series_name = self._get_series_name(series_point)
-            data_begin_val = datetime.strptime(series_point['startDate'], '%Y-%m-%dT%H:%M:%S')    
-            data_end_val = datetime.strptime(series_point['endDate'], '%Y-%m-%dT%H:%M:%S')
+            date_format = '%Y-%m-%dT%H:%M:%SZ' if series_point['startDate'].endswith('Z') else '%Y-%m-%dT%H:%M:%S'
+            data_begin_val = datetime.strptime(series_point['startDate'], date_format)
+            data_end_val = datetime.strptime(series_point['endDate'], date_format)
             if (series_point['frequency'] == "W"):
                 data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
                 data_end_val = data_end_val - timedelta(days = data_end_val.weekday())

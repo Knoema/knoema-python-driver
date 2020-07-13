@@ -146,11 +146,9 @@ class PivotItemMetadata(object):
 class PivotItem(object):
     """The class contains pivot request item"""
 
-    def __init__(self, dimensionid=None, members=None, metadataFields=None, dimensionFields=None, transform=None, aggregations=None):
+    def __init__(self, dimensionid=None, members=None, metadataFields=None, dimensionFields=None, aggregations=None):
         self.dimensionid = dimensionid
         self.members = members
-        if transform != None:
-            self.transform = transform
         if aggregations != None:
             self.aggregation = aggregations
         if metadataFields:
@@ -178,7 +176,7 @@ class PivotRequest(object):
         self.stub = []
         self.filter = []
         self.frequencies = []
-        self.normalized_frequencies = []
+        self.transform = None
 
     def _get_item_array(self, items):
         arr = []
@@ -189,8 +187,6 @@ class PivotRequest(object):
             }
             if hasattr(item, 'aggregation'):
                 itemvalues['Aggregation'] = item.aggregation
-            if hasattr(item, 'transform'):
-                itemvalues['Transform'] = item.transform
             if isinstance(item, PivotTimeItem):
                 itemvalues['UiMode'] = item.uimode
             arr.append(itemvalues)
@@ -203,9 +199,11 @@ class PivotRequest(object):
             'Header' : self._get_item_array(self.header),
             'Filter' : self._get_item_array(self.filter),
             'Stub' : self._get_item_array(self.stub),
-            'Frequencies': self.frequencies,
-            'NormalizedFrequencies': self.normalized_frequencies
+            'Frequencies': self.frequencies
         }
+        if self.transform is not None:
+            requestvalues['Transform'] = self.transform
+            
         return json.dumps(requestvalues)
 
 

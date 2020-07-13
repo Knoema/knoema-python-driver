@@ -172,7 +172,6 @@ class SelectionDataReader(DataReader):
 
         filter_dims = []
         time_range = None
-        first = True
         for name, value in self.dim_values.items():
             if definition.is_equal_strings_ignore_case(name, 'timerange'):
                 time_range = value
@@ -180,9 +179,7 @@ class SelectionDataReader(DataReader):
 
             splited_values = value.split(self.separator) if isinstance(value, str) else value
             if definition.is_equal_strings_ignore_case(name, 'frequency'):
-                available_frequency = self.client.get_daterange(self.dataset.id).frequencies
-                pivot_req.normalized_frequencies = splited_values
-                pivot_req.frequencies = available_frequency
+                pivot_req.frequencies = splited_values
                 continue
 
             dim = self._find_dimension(name)
@@ -206,11 +203,7 @@ class SelectionDataReader(DataReader):
             if not members and aggregations == None:
                 raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
-            if first and self.transform != None:
-                pivot_req.stub.append(definition.PivotItem(dim.id, members, transform = self.transform, aggregations = aggregations))
-                first = False
-            else:
-                pivot_req.stub.append(definition.PivotItem(dim.id, members, aggregations = aggregations))
+            pivot_req.stub.append(definition.PivotItem(dim.id, members, aggregations = aggregations))
 
         self._add_full_selection_by_empty_dim_values(filter_dims, pivot_req)
 
@@ -218,6 +211,9 @@ class SelectionDataReader(DataReader):
             pivot_req.header.append(definition.PivotTimeItem('Time', [time_range], 'range'))
         else:
             pivot_req.header.append(definition.PivotTimeItem('Time', [], 'AllData'))
+
+        if self.transform is not None:
+            pivot_req.transform = self.transform
 
         return pivot_req
 

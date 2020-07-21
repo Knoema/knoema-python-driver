@@ -907,3 +907,16 @@ class TestKnoemaClient(unittest.TestCase):
 
         self.assertIs(type(res), str)
         self.assertEqual(len(res), 7)
+
+    #def test_reportDates(self):
+    #    """Testing dataset with ReportDate column"""
+
+    #   apicfg = knoema.ApiConfig()
+    #    apicfg.host = 'knoema.org'
+    #    generator = knoema.get('1010DDCDYOY_S', group_by = 'indicator', indicator = 'Debit Num Transactions Index YoY;Debit Sales Index YoY', category = 'Lululemon', country = 'US', company = '734', frequency = 'FQ', timerange = '2012FQ1-2021FQ4')
+    #    for frame in generator:
+    #        print(frame.data)
+        #frame = knoema.get('1010DDCDYOY_S', indicator = 'Debit Num Transactions Index YoY', category = 'Lululemon', country = 'US', company = '734', frequency = 'FQ', timerange = '2012FQ1-2021FQ4')
+        #print(frame)
+        #frame = knoema.get('1010DDCDYOY_S', indicator = 'Debit Num Transactions Index YoY;Debit Sales Index YoY', category = 'Lululemon', country = 'US', company = '734', frequency = 'FQ', timerange = '2012FQ1-2021FQ4')
+        #print(frame)

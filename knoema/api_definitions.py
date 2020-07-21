@@ -227,6 +227,7 @@ class PivotResponse(object):
             self.filter.append(self._construct_dimension(item))
 
         self.tuples = data['data']
+        self.descriptor = data['descriptor'] if 'descriptor' in data else None
 
     def _construct_dimension(self, item):
         return PivotItem(item['dimensionId'], item['members'], item['metadataFields'], item['dimensionFields'] if 'dimensionFields' in item else None)
@@ -238,6 +239,7 @@ class RawDataResponse(object):
 
         self.continuation_token = data['continuationToken']
         self.series = data['data']
+        self.descriptor = data['descriptor'] if 'descriptor' in data else None
 
 class MnemonicsResponseList(object):
 

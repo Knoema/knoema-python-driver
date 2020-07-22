@@ -14,6 +14,7 @@ class DataReader(object):
         self.client = client
         self.dataset = None
         self.include_metadata = False
+        self.columns = None
         self.dimensions = []     
         self.separator = ';'
 
@@ -83,7 +84,7 @@ class DataReader(object):
         detail_columns = []
         if resp.descriptor is not None and 'detailColumns' in resp.descriptor and resp.descriptor['detailColumns'] is not None:
             for column in resp.descriptor['detailColumns']:
-                detail_columns.append(column['id'])
+                detail_columns.append(column['name'])
 
         return detail_columns if len(detail_columns) > 0 else None
 
@@ -237,6 +238,9 @@ class SelectionDataReader(DataReader):
 
         if self.transform is not None:
             pivot_req.transform = self.transform
+
+        if self.columns is not None:
+            pivot_req.columns = self.columns
 
         return pivot_req
 
@@ -722,14 +726,6 @@ class StreamingDataReader(SelectionDataReader):
                 serie_attrs = self._get_series_with_metadata(series_point)
                 series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes, None)
         return series  
-
-    def _get_detail_columns(self, resp):
-        detail_columns = []
-        if resp.descriptor is not None and 'detailColumns' in resp.descriptor and resp.descriptor['detailColumns'] is not None:
-            for column in resp.descriptor['detailColumns']:
-                detail_columns.append(column['id'])
-
-        return detail_columns if len(detail_columns) > 0 else None
 
     def _get_data_series(self, resp, detail_columns):
         series_map = {}

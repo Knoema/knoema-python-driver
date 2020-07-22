@@ -8,7 +8,7 @@ from knoema.api_definitions_sema import Company
 from knoema.api_definitions_search import SearchResults
 from knoema.upload_frame import FrameTransformerFactory, FileLayerWrapper
 
-def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, separator = None, group_by = None, **dim_values):
+def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, separator = None, group_by = None, columns = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
 
     if not dataset and not mnemonics:
@@ -41,6 +41,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
 
     if mnemonics:
         reader =  MnemonicsDataReader(client, mnemonics, transform, frequency)
+        reader.columns = columns
         reader.include_metadata = include_metadata
         reader.dataset = ds
 
@@ -53,7 +54,8 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         raise ValueError('Dataset id is not specified')
 
     if ds.type == 'Regular' and not has_agg and group_by:
-        metadata_reader =  StreamingDataReader(client, dim_values)
+        metadata_reader = StreamingDataReader(client, dim_values)
+        metadata_reader.columns = columns
         metadata_reader.dataset = ds
         if separator:
             metadata_reader.separator = separator
@@ -61,6 +63,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         metadata = metadata_reader.get_series_metadata()
 
         reader = TransformationDataReader(client, None, transform, frequency, group_by)
+        reader.columns = columns
         reader.include_metadata = include_metadata
         reader.dataset = ds
 
@@ -75,6 +78,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
     else:
         reader = TransformationDataReader(client, dim_values, transform, frequency, None)
 
+    reader.columns = columns
     reader.include_metadata = include_metadata
     reader.dataset = ds
 

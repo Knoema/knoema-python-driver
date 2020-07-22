@@ -177,6 +177,7 @@ class PivotRequest(object):
         self.filter = []
         self.frequencies = []
         self.transform = None
+        self.columns = None
 
     def _get_item_array(self, items):
         arr = []
@@ -203,6 +204,8 @@ class PivotRequest(object):
         }
         if self.transform is not None:
             requestvalues['Transform'] = self.transform
+        if self.columns is not None:
+            requestvalues['DetailColumns'] = self.columns
             
         return json.dumps(requestvalues)
 

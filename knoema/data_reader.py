@@ -81,7 +81,7 @@ class DataReader(object):
 
     def _get_detail_columns(self, resp):
         detail_columns = []
-        if resp.descriptor is not None:
+        if resp.descriptor is not None and 'detailColumns' in resp.descriptor and resp.descriptor['detailColumns'] is not None:
             for column in resp.descriptor['detailColumns']:
                 detail_columns.append(column['id'])
 
@@ -725,7 +725,7 @@ class StreamingDataReader(SelectionDataReader):
 
     def _get_detail_columns(self, resp):
         detail_columns = []
-        if resp.descriptor is not None:
+        if resp.descriptor is not None and 'detailColumns' in resp.descriptor and resp.descriptor['detailColumns'] is not None:
             for column in resp.descriptor['detailColumns']:
                 detail_columns.append(column['id'])
 

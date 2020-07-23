@@ -114,6 +114,8 @@ class DataReader(object):
 
             if series_point['Frequency'] == "W":
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
+            if series_point['Frequency'] == "FQ":
+                curr_date_val = self.format_fq(curr_date_val)
             if detail_columns is not None:
                 columns = []
                 for column_name in detail_columns:
@@ -142,6 +144,10 @@ class DataReader(object):
     def _load_dimensions(self):
         for dim in self.dataset.dimensions:
             self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+
+    def format_fq(self, date_point):
+        quarter = (date_point.month - 1) // 3 + 1
+        return '{}FQ{}'.format(date_point.year, quarter)
     
 
 class SelectionDataReader(DataReader):
@@ -243,6 +249,7 @@ class SelectionDataReader(DataReader):
             pivot_req.columns = self.columns
 
         return pivot_req
+
 
 class TransformationDataReader(SelectionDataReader):
 
@@ -749,16 +756,18 @@ class StreamingDataReader(SelectionDataReader):
 
             date_format = '%Y-%m-%dT%H:%M:%S' + 'Z' if series_point['startDate'].endswith('Z') else ''
             data_begin_val = datetime.strptime(series_point['startDate'], date_format)
-            if (series_point['frequency'] == "W"):
+            freq = series_point['frequency']
+            if (freq == "W"):
                 data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
-            delta = dict_with_delta[series_point['frequency']]
+            
+            delta = dict_with_delta[freq]
             series = KnoemaSeries(series_name, [], [], detail_columns)
 
             curr_date_val = data_begin_val
             for vi in range(0, len(all_values)):
                 val = all_values[vi]
                 if val is not None:
-                    series.index.append(curr_date_val)
+                    series.index.append(curr_date_val if freq != 'FQ' else self.format_fq(curr_date_val))
                     series.values.append(val)
                     for ai in range(0, series.column_count):
                         series.column_values[ai].append(detail_values[ai][vi])
@@ -841,6 +850,8 @@ class MnemonicsDataReader(DataReader):
 
             if (series_point['Frequency'] == "W"):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
+            if (series_point['Frequency'] == 'FQ'):
+                curr_date_val = self.format_fq(curr_date_val)
             series[series_name].add_value(series_point['Value'], curr_date_val, None)
         return series
 

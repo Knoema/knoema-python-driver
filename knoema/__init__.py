@@ -20,6 +20,9 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
 
     ds = client.get_dataset(dataset) if dataset else None
 
+    if columns is not None and isinstance(columns, str):
+        columns = columns.split(';')
+
     frequency = None
     timerange = None
     has_agg = False

@@ -14,6 +14,7 @@ class DataReader(object):
         self.client = client
         self.dataset = None
         self.include_metadata = False
+        self.columns = None
         self.dimensions = []     
         self.separator = ';'
 
@@ -76,18 +77,31 @@ class DataReader(object):
             serie_name = self._get_series_name(series_point)
             if serie_name not in series:
                 serie_attrs = self._get_series_with_metadata(series_point)
-                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
+                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes, None)
         return series
 
-    def _get_data_series(self, resp):
-        series = {}
+    def _get_detail_columns(self, resp):
+        detail_columns = []
+        if resp.descriptor is not None and 'detailColumns' in resp.descriptor and resp.descriptor['detailColumns'] is not None:
+            for column in resp.descriptor['detailColumns']:
+                detail_columns.append(column['name'])
+
+        return detail_columns if len(detail_columns) > 0 else None
+
+    def _get_data_series(self, resp, detail_columns):
+        series_map = {}
+
+        columns = None
         for series_point in resp.tuples:
             val = series_point['Value']
             if val is None:
                 continue
             series_name = self._get_series_name(series_point)
-            if series_name not in series:
-                series[series_name] = KnoemaSeries(series_name,[],[])
+            if series_name in series_map:
+                series = series_map[series_name]
+            else:
+                series = KnoemaSeries(series_name, [], [], detail_columns)
+                series_map[series_name] = series
 
             if 'Time' in series_point:
                 curr_date_val = series_point['Time']
@@ -98,26 +112,42 @@ class DataReader(object):
             else:
                 curr_date_val = 'All time'
 
-            if (series_point['Frequency'] == "W"):
+            if series_point['Frequency'] == "W":
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
-            series[series_name].add_value(series_point['Value'], curr_date_val)
-        return series
+            if series_point['Frequency'] == "FQ":
+                curr_date_val = self.format_fq(curr_date_val)
+            if detail_columns is not None:
+                columns = []
+                for column_name in detail_columns:
+                    columns.append(series_point[column_name])
 
-    def creates_pandas_series(self, series, pandas_series):
-        for series_name, series_content in series.items():
-            pandas_series[series_name] = series_content.get_pandas_series()
+            series.add_value(series_point['Value'], curr_date_val, columns)
+        return series_map
+
+    def creates_pandas_series(self, series, pandas_series, detail_columns):
+        for _, series_content in series.items():
+            series_content.creates_pandas_series(pandas_series, detail_columns)
         return pandas_series
 
-    def create_pandas_dataframe(self, pandas_series, names_of_dimensions):
+    def create_pandas_dataframe(self, pandas_series, names_of_dimensions, detail_columns):
         pandas_data_frame = pandas.DataFrame(pandas_series)
         pandas_data_frame.sort_index()
         if isinstance(pandas_data_frame.columns, pandas.MultiIndex):
-            pandas_data_frame.columns.names = names_of_dimensions
+            column_names = names_of_dimensions
+            if detail_columns is not None:
+                column_names = list(column_names)
+                column_names.append('Attribute')
+            pandas_data_frame.columns.names = column_names
+
         return pandas_data_frame
 
     def _load_dimensions(self):
         for dim in self.dataset.dimensions:
             self.dimensions.append(self.client.get_dimension(self.dataset.id, dim.id))
+
+    def format_fq(self, date_point):
+        quarter = (date_point.month - 1) // 3 + 1
+        return '{}FQ{}'.format(date_point.year, quarter)
     
 
 class SelectionDataReader(DataReader):
@@ -215,7 +245,11 @@ class SelectionDataReader(DataReader):
         if self.transform is not None:
             pivot_req.transform = self.transform
 
+        if self.columns is not None:
+            pivot_req.columns = self.columns
+
         return pivot_req
+
 
 class TransformationDataReader(SelectionDataReader):
 
@@ -233,16 +267,17 @@ class TransformationDataReader(SelectionDataReader):
         names_of_dimensions = self._get_dimension_names()
             
         # create dataframe with data
-        series = self._get_data_series(pivot_resp)
-        pandas_series = self.creates_pandas_series(series, {})
-        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
+        detail_columns = self._get_detail_columns(pivot_resp)
+        series = self._get_data_series(pivot_resp, detail_columns)
+        pandas_series = self.creates_pandas_series(series, {}, detail_columns)
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions, detail_columns)
         if not self.include_metadata:
             return pandas_data_frame
             
         # create dataframe with metadata
         series_with_attr = self._get_metadata_series(pivot_resp)
-        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, {})
-        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, {}, None)
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions, None)
         return pandas_data_frame, pandas_data_frame_with_attr
 
     def get_pandasframe(self):
@@ -262,8 +297,10 @@ class TransformationDataReader(SelectionDataReader):
             'D': timedelta(days = 1)
         }
 
-        data_begin_val = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S')    
-        data_end_val = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S')
+        date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if start_date.endswith('Z') else '')
+        data_begin_val = datetime.strptime(start_date, date_format)
+        date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if end_date.endswith('Z') else '')
+        data_end_val = datetime.strptime(end_date, date_format)
         if (frequency == "W"):
             data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
             data_end_val = data_end_val - timedelta(days = data_end_val.weekday())
@@ -385,6 +422,7 @@ class TransformationDataReader(SelectionDataReader):
         series = {}
         series_with_attr = {}
         offset = 0
+        detail_columns = None
         while True:
             metadata_part = self._get_part_of_metadata(metadata, offset)
             if metadata_part == None:
@@ -417,20 +455,20 @@ class TransformationDataReader(SelectionDataReader):
             self.dim_values = dim_values
             pivot_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_query())
 
-            part_series = self._get_data_series(pivot_resp)
+            part_series = self._get_data_series(pivot_resp, detail_columns)
             series.update(part_series)
 
             if self.include_metadata:
                 part_series_with_attr = self._get_metadata_series(pivot_resp)
                 series_with_attr.update(part_series_with_attr)
 
-        pandas_series = self.creates_pandas_series(series, {})
-        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
+        pandas_series = self.creates_pandas_series(series, {}, detail_columns)
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions, detail_columns)
         if not self.include_metadata:
             return pandas_data_frame
 
-        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, {})
-        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, {}, None)
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions, None)
         return pandas_data_frame, pandas_data_frame_with_attr
 
     def get_pandasframe_by_metadata_grouped(self, metadata, timerange):
@@ -439,6 +477,8 @@ class TransformationDataReader(SelectionDataReader):
         series = {}
         series_with_attr = {}
         offset = 0
+        detail_columns = None
+        was = False
         while True:
             metadata_part = self._get_part_of_metadata(metadata, offset)
             if metadata_part == None:
@@ -473,7 +513,16 @@ class TransformationDataReader(SelectionDataReader):
             self.dim_values = dim_values
             pivot_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_query())
 
-            part_series = self._get_data_series(pivot_resp)
+            if was:
+                if detail_columns is not None:
+                    part_detail_columns = self._get_detail_columns(pivot_resp)
+                    if detail_columns != part_detail_columns:
+                        detail_columns = None
+            else:
+                was = True
+                detail_columns = self._get_detail_columns(pivot_resp)
+
+            part_series = self._get_data_series(pivot_resp, detail_columns)
             series.update(part_series)
 
             if self.include_metadata:
@@ -500,15 +549,15 @@ class TransformationDataReader(SelectionDataReader):
                 all_series_by_group = self._get_all_series_for_group(group_name, group_name_index, frequency, series, metadata)
                 if all_series_by_group != None:
                     groups_to_delete.append(group_name)
-                    all_panda_series_by_group = self.creates_pandas_series(all_series_by_group, {})
+                    all_panda_series_by_group = self.creates_pandas_series(all_series_by_group, {}, detail_columns)
                     data_frame = definition.DataFrame()
                     data_frame.id = group_name
-                    data_frame.data = self.create_pandas_dataframe(all_panda_series_by_group, names_of_dimensions)
+                    data_frame.data = self.create_pandas_dataframe(all_panda_series_by_group, names_of_dimensions, detail_columns)
 
                     if self.include_metadata:
                         all_series_with_attr_by_group = self._get_series_with_attr(all_series_by_group, series_with_attr)
-                        all_pandes_series_with_attr_by_group = self.creates_pandas_series(all_series_with_attr_by_group, {})
-                        data_frame.metadata = self.create_pandas_dataframe(all_pandes_series_with_attr_by_group, names_of_dimensions)
+                        all_pandes_series_with_attr_by_group = self.creates_pandas_series(all_series_with_attr_by_group, {}, None)
+                        data_frame.metadata = self.create_pandas_dataframe(all_pandes_series_with_attr_by_group, names_of_dimensions, None)
                         
                     yield data_frame
                 else:
@@ -584,7 +633,7 @@ class TransformationDataReader(SelectionDataReader):
             serie_name = self._get_series_name(series_point)
             if serie_name not in series:
                 serie_attrs = self._get_series_with_metadata(series_point, resp)
-                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
+                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes, None)
         return series  
 
     def _get_dimension_names(self):
@@ -682,11 +731,11 @@ class StreamingDataReader(SelectionDataReader):
             serie_name = self._get_series_name(series_point)
             if serie_name not in series:
                 serie_attrs = self._get_series_with_metadata(series_point)
-                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
+                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes, None)
         return series  
 
-    def _get_data_series(self, resp):
-        series = {}
+    def _get_data_series(self, resp, detail_columns):
+        series_map = {}
         dict_with_delta = {
             'A': relativedelta(years = 1),
             'H': relativedelta(months = 6),
@@ -695,29 +744,38 @@ class StreamingDataReader(SelectionDataReader):
             'M': relativedelta(months = 1),
             'W': timedelta(days = 7),
             'D': timedelta(days = 1)}
+
+        detail_values = None
         for series_point in resp.series:  
             all_values = series_point['values']  
             series_name = self._get_series_name(series_point)
-            date_format = '%Y-%m-%dT%H:%M:%SZ' if series_point['startDate'].endswith('Z') else '%Y-%m-%dT%H:%M:%S'
+            if detail_columns is not None:
+                detail_values = []
+                for column_name in detail_columns:
+                    detail_values.append(series_point[column_name])
+
+            date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if series_point['startDate'].endswith('Z') else '')
             data_begin_val = datetime.strptime(series_point['startDate'], date_format)
-            data_end_val = datetime.strptime(series_point['endDate'], date_format)
-            if (series_point['frequency'] == "W"):
+            freq = series_point['frequency']
+            if (freq == "W"):
                 data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
-                data_end_val = data_end_val - timedelta(days = data_end_val.weekday())
-            delta = dict_with_delta[series_point['frequency']]
+            
+            delta = dict_with_delta[freq]
+            series = KnoemaSeries(series_name, [], [], detail_columns)
+
             curr_date_val = data_begin_val
-            index = []
-            values = []
-            i = 0
-            while curr_date_val<=data_end_val:
-                val = all_values[i]
+            for vi in range(0, len(all_values)):
+                val = all_values[vi]
                 if val is not None:
-                    index.append(curr_date_val)
-                    values.append(val)
+                    series.index.append(curr_date_val if freq != 'FQ' else self.format_fq(curr_date_val))
+                    series.values.append(val)
+                    for ai in range(0, series.column_count):
+                        series.column_values[ai].append(detail_values[ai][vi])
                 curr_date_val += delta
-                i += 1
-            series[series_name] = KnoemaSeries(series_name,values,index)
-        return series
+
+            series_map[series_name] = series
+
+        return series_map
 
     def get_series_metadata(self):
         self._load_dimensions()
@@ -737,17 +795,18 @@ class StreamingDataReader(SelectionDataReader):
 
         pivot_req = self._create_pivot_request()
         data_streaming = self.client.get_data_raw(pivot_req)
+        detail_columns = self._get_detail_columns(data_streaming)
         # create dataframe with data
-        series = self._get_data_series(data_streaming)
-        pandas_series = self.creates_pandas_series(series, pandas_series)
-        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions)
+        series = self._get_data_series(data_streaming, detail_columns)
+        pandas_series = self.creates_pandas_series(series, pandas_series, detail_columns)
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, names_of_dimensions, detail_columns)
         if not self.include_metadata:
             return pandas_data_frame
             
         # create dataframe with metadata
         series_with_attr = self._get_metadata_series(data_streaming, names_of_attributes)
-        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)
-        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions)         
+        pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr, None)
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions, None)         
         return pandas_data_frame, pandas_data_frame_with_attr
 
 class MnemonicsDataReader(DataReader):
@@ -767,10 +826,13 @@ class MnemonicsDataReader(DataReader):
             serie_name = series_point['Mnemonics']
             if serie_name not in series:
                 serie_attrs = self._get_series_with_metadata(series_point)
-                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes)
+                series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes, None)
         return series  
 
-    def _get_data_series(self, resp):
+    def _get_detail_columns(self, resp):
+        return None
+
+    def _get_data_series(self, resp, detail_columns):
         series = {}
         for series_point in resp.tuples:
             val = series_point['Value']
@@ -778,7 +840,7 @@ class MnemonicsDataReader(DataReader):
                 continue
             series_name = series_point['Mnemonics']
             if series_name not in series:
-                series[series_name] = KnoemaSeries(series_name,[],[])
+                series[series_name] = KnoemaSeries(series_name, [], [], detail_columns)
 
             curr_date_val = series_point['Time']
             try:
@@ -788,7 +850,9 @@ class MnemonicsDataReader(DataReader):
 
             if (series_point['Frequency'] == "W"):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
-            series[series_name].add_value(series_point['Value'], curr_date_val)
+            if (series_point['Frequency'] == 'FQ'):
+                curr_date_val = self.format_fq(curr_date_val)
+            series[series_name].add_value(series_point['Value'], curr_date_val, None)
         return series
 
     def _get_pandasframe_one_dataset(self):
@@ -800,23 +864,24 @@ class MnemonicsDataReader(DataReader):
         mnemonics = self.mnemonics
         mnemonics_string = self.separator.join(mnemonics) if isinstance(mnemonics, list) else mnemonics
         mnemonics_resp = self.client.get_mnemonics(mnemonics_string, self.transform, self.frequency)
+        detail_columns = None
             
         for item in mnemonics_resp.items:
             pivot_resp = item.pivot
             if not definition.is_equal_strings_ignore_case(self.dataset.id, pivot_resp.dataset):
                 continue
             # create dataframe with data for mnemonics
-            series = self._get_data_series(pivot_resp)
-            pandas_series = self.creates_pandas_series(series, pandas_series)
+            series = self._get_data_series(pivot_resp, detail_columns)
+            pandas_series = self.creates_pandas_series(series, pandas_series, detail_columns)
             if self.include_metadata:
                 # create dataframe with metadata for mnemonics
                 series_with_attr = self._get_metadata_series(pivot_resp, names_of_attributes)
-                pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)     
+                pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr, None)
 
-        pandas_data_frame = self.create_pandas_dataframe(pandas_series, [])
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, [], detail_columns)
         if not self.include_metadata:
             return pandas_data_frame
-        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, [])         
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, [], None)
         return pandas_data_frame, pandas_data_frame_with_attr
 
     def _get_pandasframe_across_datasets(self):
@@ -825,12 +890,11 @@ class MnemonicsDataReader(DataReader):
         mnemonics_resp = self.client.get_mnemonics(mnemonics_string, self.transform, self.frequency)
 
         dict_datasets = {}
-        dict_dimensions = {} 
         pandas_series = {}
         if self.include_metadata:
             pandas_series_with_attr = {}
-            dict_attributes_names = {}
 
+        detail_columns = None
         for item in mnemonics_resp.items:
             pivot_resp = item.pivot
             if pivot_resp is None:
@@ -839,33 +903,27 @@ class MnemonicsDataReader(DataReader):
             if dataset_id  not in dict_datasets:
                 dataset = self.client.get_dataset(dataset_id)
                 self.dataset = dataset
-                dict_datasets[dataset_id] = dataset
                 dimensions = []
                 for dim in dataset.dimensions:
                     dimensions.append(self.client.get_dimension(dataset_id, dim.id))
-                dict_dimensions[dataset_id] = dimensions
                 self.dimensions = dimensions
-                if self.include_metadata:
-                    names_of_attributes = self._get_attribute_names()
-                    dict_attributes_names[dataset_id] = names_of_attributes
+                names_of_attributes = self._get_attribute_names() if self.include_metadata else None
+                dict_datasets[dataset_id] = (dataset, dimensions, names_of_attributes)
             else:
-                self.dataset = dict_datasets[dataset_id]
-                self.dimensions = dict_dimensions[dataset_id]
-                if self.include_metadata:
-                    names_of_attributes = dict_attributes_names[dataset_id]
+                self.dataset, self.dimensions, names_of_attributes = dict_datasets[dataset_id]
                     
             # create dataframe with data for mnemonics
-            series = self._get_data_series(pivot_resp)
-            pandas_series = self.creates_pandas_series(series, pandas_series)
+            series = self._get_data_series(pivot_resp, detail_columns)
+            pandas_series = self.creates_pandas_series(series, pandas_series, detail_columns)
             if self.include_metadata:
                 # create dataframe with metadata for mnemonics
                 series_with_attr = self._get_metadata_series(pivot_resp, names_of_attributes)
-                pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr)     
+                pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr, None)
 
-        pandas_data_frame = self.create_pandas_dataframe(pandas_series, [])
+        pandas_data_frame = self.create_pandas_dataframe(pandas_series, [], detail_columns)
         if not self.include_metadata:
             return pandas_data_frame
-        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, [])         
+        pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, [], None)         
         return pandas_data_frame, pandas_data_frame_with_attr
 
     def get_pandasframe(self):
@@ -879,17 +937,32 @@ class MnemonicsDataReader(DataReader):
 class KnoemaSeries(object):
     """This class combines values and index points for one time series"""
 
-    def __init__(self, name, values=[], index=[]):
+    def __init__(self, name, values=[], index=[], detail_columns=None):
         self.name = name
         self.values = values
         self.index = index
+        self.column_count = len(detail_columns) if detail_columns is not None else 0
+        self.column_values = [] if self.column_count > 0 else None
+        for _ in range(0, self.column_count):
+            self.column_values.append([])
 
-    def add_value(self, value, index_point):
+    def add_value(self, value, index_point, columns=None):
         """The function is addeing new value to provied index. If index does not exist"""
         if index_point not in self.index:
             self.values.append(value)
             self.index.append(index_point)
+            if self.column_count > 0:
+                for i in range(0, self.column_count):
+                    self.column_values[i].append(None if columns is None else columns[i])
 
-    def get_pandas_series(self):
+    def creates_pandas_series(self, pandas_series, detail_columns):
         """The function creates pandas series based on index and values"""
-        return pandas.Series(self.values, self.index, name=self.name)
+        if detail_columns is None:
+            pandas_series[self.name] = pandas.Series(self.values, self.index, name=self.name)
+        else:
+            series_name = self.name + ('Value',)
+            pandas_series[series_name] = pandas.Series(self.values, self.index, name=series_name)
+            for i in range(0, self.column_count):
+                column_name = detail_columns[i]
+                series_name = self.name + (column_name,)
+                pandas_series[series_name] = pandas.Series(self.column_values[i], self.index, name=series_name)

@@ -297,9 +297,9 @@ class TransformationDataReader(SelectionDataReader):
             'D': timedelta(days = 1)
         }
 
-        date_format = '%Y-%m-%dT%H:%M:%S' + 'Z' if start_date.endswith('Z') else ''
+        date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if start_date.endswith('Z') else '')
         data_begin_val = datetime.strptime(start_date, date_format)
-        date_format = '%Y-%m-%dT%H:%M:%S' + 'Z' if end_date.endswith('Z') else ''
+        date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if end_date.endswith('Z') else '')
         data_end_val = datetime.strptime(end_date, date_format)
         if (frequency == "W"):
             data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
@@ -754,7 +754,7 @@ class StreamingDataReader(SelectionDataReader):
                 for column_name in detail_columns:
                     detail_values.append(series_point[column_name])
 
-            date_format = '%Y-%m-%dT%H:%M:%S' + 'Z' if series_point['startDate'].endswith('Z') else ''
+            date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if series_point['startDate'].endswith('Z') else '')
             data_begin_val = datetime.strptime(series_point['startDate'], date_format)
             freq = series_point['frequency']
             if (freq == "W"):

@@ -403,6 +403,8 @@ class TransformationDataReader(SelectionDataReader):
         if frequency == None:
             if len(series_by_group.keys()) == count:
                 return series_by_group
+            else:
+                return None
 
         if len(available_frequency.keys()) == 0:
             return None

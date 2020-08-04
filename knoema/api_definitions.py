@@ -209,6 +209,10 @@ class PivotRequest(object):
             
         return json.dumps(requestvalues)
 
+class DetailsResponse(object):
+    def __init__(self, data):
+        self.columns = data['columns']
+        self.tuples = data['data']
 
 class PivotResponse(object):
     """The class contains pivot response"""

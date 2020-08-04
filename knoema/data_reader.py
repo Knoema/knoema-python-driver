@@ -107,6 +107,9 @@ class DataReader(object):
                 curr_date_val = series_point['Time']
                 try:
                     curr_date_val = datetime.strptime(series_point['Time'], '%Y-%m-%dT%H:%M:%SZ')
+
+                    if (series_point['Frequency'] == "W"):
+                        curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
                 except ValueError:
                     pass
             else:
@@ -698,8 +701,9 @@ class StreamingDataReader(SelectionDataReader):
     def _get_series_name(self, series_point):
         names = []
         for dim in self.dimensions:
-            names.append(series_point[dim.id]['name'])
-        names.append(series_point['frequency'])
+            names.append(series_point[dim.id]['name'] if 'name' in series_point[dim.id] else series_point[dim.id])
+        if 'frequency' in series_point:
+            names.append(series_point['frequency'])
         return tuple(names)
 
     def _get_series_with_metadata(self, series_point):
@@ -789,6 +793,13 @@ class StreamingDataReader(SelectionDataReader):
 
     def get_pandasframe(self):
         self._load_dimensions()
+
+        if self.dataset.type == 'Flat':
+            if not self.include_metadata:
+                return self.get_records_pandasframe()
+            
+            return self.get_records_pandasframe(), None
+
         pandas_series = {}
         names_of_dimensions = self._get_dimension_names()
         if self.include_metadata:
@@ -810,6 +821,78 @@ class StreamingDataReader(SelectionDataReader):
         pandas_series_with_attr = self.creates_pandas_series(series_with_attr, pandas_series_with_attr, None)
         pandas_data_frame_with_attr = self.create_pandas_dataframe(pandas_series_with_attr, names_of_dimensions, None)         
         return pandas_data_frame, pandas_data_frame_with_attr
+
+    def _get_details_data_series(self, resp):
+        series = {}
+        for series_point in resp.tuples:
+            val = series_point['value']
+            if val is None:
+                continue
+            series_name = self._get_series_name(series_point)
+            if series_name not in series:
+                series[series_name] = KnoemaSeries(series_name,[],[])
+
+            if 'Time' in series_point:
+                curr_date_val = series_point['Time']
+                try:
+                    curr_date_val = datetime.strptime(series_point['Time'], '%Y-%m-%dT%H:%M:%SZ')
+
+                    if (series_point['Frequency'] == "W"):
+                        curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
+                except ValueError:
+                    pass
+            else:
+                curr_date_val = 'All time'
+
+            series[series_name].add_value(series_point['value']['value'], curr_date_val)
+        return series
+
+    def get_records_pandasframe(self):
+        pivot_req = self._create_pivot_request()
+        data_streaming = self.client.get_details(pivot_req)
+        
+        titles = []
+        columns = []
+        for col in data_streaming.columns:
+            if col['dimensionId'] != None:
+                if 'detailColumns' in col:
+                    titles.append(col['name'])
+                    columns.append([col['id'], 'name'])
+                    for detail in col['detailColumns']:
+                        titles.append(detail['name'])
+                        columns.append([col['id'], detail['id']])
+                else:
+                    titles.append(col['name'])
+                    columns.append(col['id'])
+            else:
+                if col['type'] == 'Date':
+                    titles.append(col['name'])
+                    columns.append([col['id'], 'value'])
+                    continue
+
+                if col['type'] == 'Currency':
+                    titles.append(col['name'])
+                    columns.append([col['id'], 'value'])
+                    continue
+
+                titles.append(col['name'])
+                columns.append(col['id'])
+
+        records = []
+        for tuple in data_streaming.tuples:
+            record = []
+
+            for col in columns:
+                if isinstance(col, str):
+                    val = tuple[col]
+                    record.append(val)
+                else:
+                    val = tuple[col[0]]
+                    record.append(val[col[1]] if val != None else None)
+
+            records.append(record)
+
+        return pandas.DataFrame(data=records, columns=titles)
 
 class MnemonicsDataReader(DataReader):
 
@@ -934,7 +1017,6 @@ class MnemonicsDataReader(DataReader):
             self._load_dimensions()
             return self._get_pandasframe_one_dataset()
         return self._get_pandasframe_across_datasets()
-
 
 class KnoemaSeries(object):
     """This class combines values and index points for one time series"""

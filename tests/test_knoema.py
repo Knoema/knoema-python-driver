@@ -201,12 +201,10 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing load data from flat dataset"""
 
         data_frame = knoema.get('cblymmf', Country='Albania;Australia', Keyword='FGP;TWP;TRP')
-        self.assertEqual(data_frame.shape[0], 1)
+        self.assertEqual(data_frame.shape[0], 32)
         self.assertEqual(data_frame.shape[1], 4)
 
-        sname = ('Albania', 'FGP', 'D')
-        value = data_frame.at['All time', sname]
-        self.assertEqual(value, 8.0)
+        self.assertAlmostEqual(float(data_frame.at[30, 'Value']), 98.8368, 4)
 
     def test_get_data_from_dataset_with_multiword_dimnames(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names"""
@@ -245,10 +243,9 @@ class TestKnoemaClient(unittest.TestCase):
                                               'measure': 'Interest rate'})
 
         self.assertEqual(data_frame.shape[0], 1)
-        self.assertEqual(data_frame.shape[1], 1)
+        self.assertEqual(data_frame.shape[1], 33)
 
-        sname = ('Albania', 'Ministry of Finance', 'Albania', 'B LOAN', 'EFFECTIVE', 'EUR', 'Interest Rate', 'D')
-        value = data_frame.at['All time', sname]
+        value = data_frame.at[0, 'Interest Rate']
         self.assertEqual(value, 0.0)
 
     def test_get_data_from_flat_dataset_without_time(self):
@@ -258,11 +255,10 @@ class TestKnoemaClient(unittest.TestCase):
                                               'Object name': 'Bakel airport'})
 
         self.assertEqual(data_frame.shape[0], 1)
-        self.assertEqual(data_frame.shape[1], 1)
+        self.assertEqual(data_frame.shape[1], 6)
 
-        sname = ('Airports', 'Bakel Airport')
-        value = data_frame.at['All time', sname]
-        self.assertEqual(value, 1.0)
+        value = data_frame.at[0, 'Place']
+        self.assertEqual(value, 'Bakel')
 
     def test_get_data_from_flat_dataset_with_datecolumn(self):
         """The method is testing load data from flat dataset with specifying datecolumn"""
@@ -271,7 +267,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 5)
         self.assertEqual(data_frame.shape[1], 5)
 
-        sname = ('Albania', 'MINISTRY OF FINANCE', 'Albania', 'FSL', 'Disbursing', 'Original Principal Amount ($)', 'A')
+        sname = ('Albania', 'MINISTRY OF FINANCE', 'Albania', 'FSL', 'Disbursing&Repaying', 'Original Principal Amount ($)', 'A')
         value = data_frame.at['2013-01-01', sname]
         self.assertEqual(value, 40000000.0)
 
@@ -480,16 +476,11 @@ class TestKnoemaClient(unittest.TestCase):
                                               'measure': 'Interest rate'})
 
         self.assertEqual(data_frame.shape[0], 1)
-        self.assertEqual(data_frame.shape[1], 1)
-        self.assertEqual(metadata.shape[0], 6)
-        self.assertEqual(metadata.shape[1], 1)
+        self.assertEqual(data_frame.shape[1], 33)
+        self.assertEqual(metadata, None)
 
-        sname = ('Albania', 'Ministry of Finance', 'Albania', 'B LOAN', 'EFFECTIVE', 'EUR', 'Interest Rate', 'D')
-        value = data_frame.at['All time', sname]
-        self.assertEqual(value, 0.0)
-        self.assertEqual(metadata.at['Country Country Code',sname],'AL')
-        self.assertEqual(metadata.at['Scale',sname],1)
-        self.assertEqual(metadata.at['Unit',sname],'None')
+        value = data_frame.at[0, 'Undisbursed Amount']
+        self.assertEqual(value, 79998000.0)
 
     def test_get_data_from_flat_dataset_without_time_and_with_metadata(self):
         """The method is testing load data from flat dataset without time and with metadata"""
@@ -498,18 +489,11 @@ class TestKnoemaClient(unittest.TestCase):
                                               'Object name': 'Bakel airport'})
 
         self.assertEqual(data_frame.shape[0], 1)
-        self.assertEqual(data_frame.shape[1], 1)
-        self.assertEqual(metadata.shape[0], 5)
-        self.assertEqual(metadata.shape[1], 1)
-
-        sname = ('Airports', 'Bakel Airport')
-        value = data_frame.at['All time', sname]
-        self.assertEqual(value, 1.0)   
-        self.assertEqual(metadata.at['Object Name Latitude',sname],'14.847256')
-        self.assertEqual(metadata.at['Object Name Longitude',sname],'-12.468264')
-
-        self.assertEqual(metadata.at['Scale',sname],1)
-        self.assertEqual(metadata.at['Unit',sname],'# of records')
+        self.assertEqual(data_frame.shape[1], 6)
+        self.assertEqual(metadata, None)
+   
+        self.assertEqual(data_frame.at[0, 'Latitude'],'14.847256')
+        self.assertEqual(data_frame.at[0, 'Longitude'],'-12.468264')
 
     def test_weekly_frequency(self):
         """The method is testing load data from regular dataset by weekly frequency"""
@@ -719,7 +703,7 @@ class TestKnoemaClient(unittest.TestCase):
         apicfgCommunity.app_secret='g4lKmIOPE2R4w'
 
         data_frame = knoema.get('qfsneof', country='USA', series='NY.GDP.MKTP.KD.ZG')
-        self.assertEqual(data_frame.shape[0], 58)
+        self.assertEqual(data_frame.shape[0], 59)
         self.assertEqual(data_frame.shape[1], 1)
 
         self.assertEqual(['Country', 'Series', 'Frequency'], data_frame.columns.names)
@@ -731,7 +715,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.index[57]
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 2.92732272821085)
+        self.assertEqual(value, 3.18389500280651)
 
 
     def test_getdata_custom_separator(self):
@@ -847,7 +831,7 @@ class TestKnoemaClient(unittest.TestCase):
         ticker = knoema.ticker('DDD')
 
         self.assertEqual(ticker.name, '3D SYSTEMS')
-        self.assertEqual(len(ticker.groups), 6)
+        self.assertEqual(len(ticker.groups), 4)
         self.assertEqual(ticker.groups[0].name, 'HOLT Scorecards')
         self.assertEqual(len(ticker.groups[0].indicators), 23)
         self.assertEqual(ticker.groups[0].indicators[0].name, '% Change in CFROI')
@@ -860,29 +844,29 @@ class TestKnoemaClient(unittest.TestCase):
     def test_FQ_frequescy(self):
         """Testing FQ frequency"""
 
-        data_frame = knoema.get('ADFA2020', company='GRUBHUB', indicator='Sales', frequency='FQ')
+        data_frame = knoema.get('1010DDCDYOY', company='GRUBHUB', category='Eat24', indicator='Debit Avg Customer Spend YoY', frequency='FQ')
         self.assertIs(type(data_frame), pandas.core.frame.DataFrame)
-        self.assertEqual(data_frame.shape[0], 27)
+        self.assertEqual(data_frame.shape[0], 30)
         self.assertEqual(data_frame.shape[1], 1)
 
     def test_aggregations(self):
         """Testing aggregations disaggregation"""
 
-        frame = knoema.get('ADSbP2020', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
+        frame = knoema.get('SDRDPCRBYP', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
         self.assertEqual(frame.shape[0], 822)
         self.assertEqual(frame.shape[1], 1)
 
-        generator = knoema.get('ADSbP2020', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
+        generator = knoema.get('SDRDPCRBYP', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
         for frame in generator:
             self.assertEqual(frame.data.shape[0], 822)
             self.assertEqual(frame.data.shape[1], 1)
             
 
-        frame = knoema.get('ADSbP2020', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
+        frame = knoema.get('SDRDPCRBYP', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
         self.assertEqual(frame.shape[0], 10)
         self.assertEqual(frame.shape[1], 1)
 
-        generator = knoema.get('ADSbP2020', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Sales', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
+        generator = knoema.get('SDRDPCRBYP', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
         for frame in generator:
             self.assertEqual(frame.data.shape[0], 10)
             self.assertEqual(frame.data.shape[1], 1)

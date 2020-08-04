@@ -32,7 +32,8 @@ def _response_to_json(resp):
     if resp.status < 200 or resp.status >= 300:
         raise ValueError('Error {} from server:{}', resp.status, str_response)
 
-    obj_resp = json.loads(str_response)
+    #api response can starts with BOM symbol and it break json parser, so have to strip the symbol
+    obj_resp = json.loads(str_response.strip('\ufeff'))
     if isinstance(obj_resp, str):
         raise ValueError(obj_resp)
 
@@ -114,7 +115,7 @@ class ApiClient:
         headers = self._get_request_headers()
         req = urllib.request.Request(url, headers=headers)
         try:
-            resp = urllib.request.urlopen(req)
+            _ = urllib.request.urlopen(req)
         except:
             raise ValueError('The specified host {} does not exist'.format(self._host))  
 
@@ -181,6 +182,11 @@ class ApiClient:
         if frequency:
             path += '&frequency=' + frequency
         return self._api_get(definition.MnemonicsResponseList, path.format(mnemonics))
+
+    def get_details(self, request):
+        """The method is getting data details by request"""
+        path = '/api/1.1/data/details/'
+        return self._api_post(definition.DetailsResponse, path, request)
 
     def get_company_info(self, ticker):
         """The method get company data"""

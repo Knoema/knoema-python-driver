@@ -92,6 +92,7 @@ class DataReader(object):
         series_map = {}
 
         columns = None
+        frequency_list = []
         for series_point in resp.tuples:
             val = series_point['Value']
             if val is None:
@@ -103,21 +104,25 @@ class DataReader(object):
                 series = KnoemaSeries(series_name, [], [], detail_columns)
                 series_map[series_name] = series
 
+            freq = series_point['Frequency']
+
             if 'Time' in series_point:
                 curr_date_val = series_point['Time']
                 try:
                     curr_date_val = datetime.strptime(series_point['Time'], '%Y-%m-%dT%H:%M:%SZ')
 
-                    if (series_point['Frequency'] == "W"):
+                    if (freq == "W"):
                         curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
                 except ValueError:
                     pass
             else:
                 curr_date_val = 'All time'
 
-            if series_point['Frequency'] == "W":
+            if freq not in frequency_list:
+                frequency_list.append(freq)
+            if freq == "W":
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
-            if series_point['Frequency'] == "FQ":
+            if freq == "FQ":
                 curr_date_val = self.format_fq(curr_date_val)
             if detail_columns is not None:
                 columns = []
@@ -125,6 +130,10 @@ class DataReader(object):
                     columns.append(series_point[column_name])
 
             series.add_value(series_point['Value'], curr_date_val, columns)
+
+        if 'FQ' in frequency_list and len(frequency_list) > 1:
+            raise ValueError('Please provide a valid frequency list. You can request FQ or others frequencies not together.')
+
         return series_map
 
     def creates_pandas_series(self, series, pandas_series, detail_columns):
@@ -751,6 +760,8 @@ class StreamingDataReader(SelectionDataReader):
             'W': timedelta(days = 7),
             'D': timedelta(days = 1)}
 
+        frequency_list = []
+
         detail_values = None
         for series_point in resp.series:  
             all_values = series_point['values']  
@@ -763,6 +774,8 @@ class StreamingDataReader(SelectionDataReader):
             date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if series_point['startDate'].endswith('Z') else '')
             data_begin_val = datetime.strptime(series_point['startDate'], date_format)
             freq = series_point['frequency']
+            if freq not in frequency_list:
+                frequency_list.append(freq)
             if (freq == "W"):
                 data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
             
@@ -780,6 +793,9 @@ class StreamingDataReader(SelectionDataReader):
                 curr_date_val += delta
 
             series_map[series_name] = series
+
+        if 'FQ' in frequency_list and len(frequency_list) > 1:
+            raise ValueError('Please provide a valid frequency list. You can request FQ or others frequencies not together.')
 
         return series_map
 
@@ -919,6 +935,7 @@ class MnemonicsDataReader(DataReader):
 
     def _get_data_series(self, resp, detail_columns):
         series = {}
+        frequency_list = []
         for series_point in resp.tuples:
             val = series_point['Value']
             if val is None:
@@ -933,11 +950,18 @@ class MnemonicsDataReader(DataReader):
             except ValueError:
                 pass
 
-            if (series_point['Frequency'] == "W"):
+            freq = series_point['Frequency']
+            if freq not in frequency_list:
+                frequency_list.append(freq)
+            if (freq == "W"):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
-            if (series_point['Frequency'] == 'FQ'):
+            if (freq == 'FQ'):
                 curr_date_val = self.format_fq(curr_date_val)
             series[series_name].add_value(series_point['Value'], curr_date_val, None)
+
+        if 'FQ' in frequency_list and len(frequency_list) > 1:
+            raise ValueError('Please provide a valid frequency list. You can request FQ or others frequencies not together.')
+
         return series
 
     def _get_pandasframe_one_dataset(self):

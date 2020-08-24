@@ -247,6 +247,12 @@ class RawDataResponse(object):
         self.continuation_token = data['continuationToken']
         self.series = data['data']
         self.descriptor = data['descriptor'] if 'descriptor' in data else None
+        self.dimensionFields = data['dimensionFields'] if 'dimensionFields' in data else None
+
+def detect_data_response(data):
+    return DetailsResponse(data) if 'columns' in data \
+        else PivotResponse(data) if 'keys' in data \
+        else RawDataResponse(data) if 'continuationToken' in data else None
 
 class MnemonicsResponseList(object):
 

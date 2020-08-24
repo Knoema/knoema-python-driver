@@ -124,7 +124,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
-        self.assertEqual(data_frame.shape[1], 3)
+        self.assertEqual(data_frame.shape[1], 4)
 
         sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'M')
         value = data_frame.at[datetime.datetime(2017, 3, 1), sname]
@@ -134,7 +134,7 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids with time range"""
 
         data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;BE', subject='BSCI', measure='blsa', frequency='Q;M', timerange='2010M1-2015M12')
-        self.assertEqual(data_frame.shape[1], 3)
+        self.assertEqual(data_frame.shape[1], 4)
 
         sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'M')
         value = data_frame.at[datetime.datetime(2012, 12, 1), sname]
@@ -267,7 +267,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(data_frame.shape[0], 5)
         self.assertEqual(data_frame.shape[1], 5)
 
-        sname = ('Albania', 'MINISTRY OF FINANCE', 'Albania', 'FSL', 'Disbursing&Repaying', 'Original Principal Amount ($)', 'A')
+        sname = ('Albania', 'Ministry of Finance', 'Albania', 'FSL', 'Disbursing&Repaying', 'Original Principal Amount ($)', 'A')
         value = data_frame.at['2013-01-01', sname]
         self.assertEqual(value, 40000000.0)
 
@@ -715,7 +715,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.index[57]
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 3.18389500280651)
+        self.assertEqual(value, 2.92732272821085)
 
 
     def test_getdata_custom_separator(self):
@@ -853,12 +853,12 @@ class TestKnoemaClient(unittest.TestCase):
         """Testing aggregations disaggregation"""
 
         frame = knoema.get('SDRDPCRBYP', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
-        self.assertEqual(frame.shape[0], 822)
+        self.assertEqual(frame.shape[0], 851)
         self.assertEqual(frame.shape[1], 1)
 
         generator = knoema.get('SDRDPCRBYP', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
         for frame in generator:
-            self.assertEqual(frame.data.shape[0], 822)
+            self.assertEqual(frame.data.shape[0], 851)
             self.assertEqual(frame.data.shape[1], 1)
             
 

@@ -72,7 +72,7 @@ class TimeseriesSearchResult(SearchResult):
     def get(self, transform = None):
         ds = self._client.get_dataset(self.dataset)
 
-        reader =  TransformationDataReader(self._client, self._dim_values, transform, self.frequency, None)
+        reader =  TransformationDataReader(self._client, self._dim_values, transform, self.frequency)
         reader.dataset = ds
         
         return reader.get_pandasframe()

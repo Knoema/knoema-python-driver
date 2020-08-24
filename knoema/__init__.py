@@ -73,14 +73,10 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
 
         return reader.get_pandasframe_by_metadata_grouped(metadata, frequency, timerange)
 
-    reader = None
-    if ds.is_remote or (ds.type == 'Flat' and 'datecolumn' in dim_values):
-        reader = TransformationDataReader(client, dim_values, transform, frequency, None)
-    else:
-        if ds.type == 'Regular' and frequency != None:
-            dim_values['frequency'] = frequency
+    if ds.type == 'Regular' and frequency != None:
+        dim_values['frequency'] = frequency
 
-        reader = StreamingDataReader(client, dim_values, transform)
+    reader = TransformationDataReader(client, dim_values, transform, frequency, None)
 
     reader.columns = columns
     reader.include_metadata = include_metadata
@@ -157,3 +153,4 @@ def verify(dataset, publication_date, source, refernce_url):
     client = ApiClient(config.host, config.app_id, config.app_secret)
     client.check_correct_host()
     client.verify(dataset, publication_date, source, refernce_url)
+    

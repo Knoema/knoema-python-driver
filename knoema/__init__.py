@@ -57,6 +57,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         raise ValueError('Dataset id is not specified')
 
     if ds.type == 'Regular' and not has_agg and group_by:
+        if frequency != None: dim_values['frequency'] = frequency
         metadata_reader = StreamingDataReader(client, dim_values)
         metadata_reader.columns = columns
         metadata_reader.dataset = ds
@@ -65,12 +66,12 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
 
         metadata = metadata_reader.get_series_metadata()
 
-        reader = TransformationDataReader(client, None, transform, frequency, group_by)
+        reader = StreamingDataReader(client, None, transform, group_by)
         reader.columns = columns
         reader.include_metadata = include_metadata
         reader.dataset = ds
 
-        return reader.get_pandasframe_by_metadata_grouped(metadata, timerange)
+        return reader.get_pandasframe_by_metadata_grouped(metadata, frequency, timerange)
 
     reader = None
     if ds.is_remote or (ds.type == 'Flat' and 'datecolumn' in dim_values):

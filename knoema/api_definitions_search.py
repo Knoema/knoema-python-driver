@@ -1,6 +1,5 @@
 """This module contains metadata definitions for Knoema API for semantic atlas"""
 
-import json
 from knoema.data_reader import TransformationDataReader
 import urllib.parse
 

@@ -1,8 +1,6 @@
 """This module contains metadata definitions for Knoema API for semantic atlas"""
 
-import json
 from knoema.data_reader import TransformationDataReader
-from datetime import datetime
 
 class Company(object):
     """"The class contains data related to a company like name and groups of indicators"""

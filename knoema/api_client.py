@@ -125,6 +125,10 @@ class ApiClient:
         path = '/api/1.0/meta/dataset/{}'
         return self._api_get(definition.Dataset, path.format(datasetid))
 
+    def get_dataset_meta(self, datasetid):
+        path = '/api/1.0/meta/dataset/{}'
+        return self._api_get(definition.DatasetMetadata, path.format(datasetid))
+
     def get_dimension(self, dataset, dimension):
         """The method is getting information about dimension with items"""
 
@@ -152,7 +156,7 @@ class ApiClient:
     def get_dataset_data(self, dataset_id, query):
         """The method is getting JSON by URL and parses it to specified object"""
         try:
-            return self._api_get(definition.detect_data_response, '/api/2.0/data'.format(dataset_id), 'datasetId={}&{}'.format(dataset_id, query))
+            return self._api_get(definition.detect_data_response, '/api/2.0/data', 'datasetId={}&{}'.format(dataset_id, query))
         except HTTPError as ex:
             if ex.code == 400:
                 raise ValueError(ex.read().decode('utf-8'))

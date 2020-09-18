@@ -100,3 +100,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# purest
+.pytest_cache/

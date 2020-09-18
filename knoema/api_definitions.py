@@ -11,6 +11,67 @@ def is_equal_strings_ignore_case(first, second):
         return not (first or second)
 
 
+def parse_date(date_str):
+    return datetime.strptime(date_str.split('.')[0].strip('Z'), '%Y-%m-%dT%H:%M:%S') if date_str != None else None
+
+
+class DatasetMetadata:
+
+    def __init__(self, data):
+        self.data = data
+
+        settings = {}
+        if 'settings' in self.data:
+            try:
+                settings = json.loads(self.data['settings'])
+            except:
+                pass
+
+            if 'LastUpdate' in settings:
+                data['lastUpdate'] = settings['LastUpdate']['End']
+            
+            if 'LastSuccessfulUpdate' in settings:
+                data['lastSuccessfulUpdate'] = settings['LastSuccessfulUpdate']['End']
+
+            if 'Health' in settings:
+                data['health'] = settings['Health']
+
+            if 'NextRun' in settings:
+                data['nextRun'] = settings['NextRun']
+
+            if 'AverageUpdateInterval' in settings:
+                data['averageUpdateInterval'] = settings['AverageUpdateInterval']
+
+            if 'ProviderUpdateLag' in settings:
+                data['providerUpdateLag'] = settings['ProviderUpdateLag']
+
+        fields_with_date = [
+            'publicationDate',
+            'nextReleaseDate',
+            'expectedUpdateDate',
+            'lastUpdatedOn',
+            'lastUpdate',
+            'lastSuccessfulUpdate',
+            'nextRun',
+        ]
+        for field in fields_with_date:
+            if field in self.data:
+                self.data[field] = parse_date(self.data[field])
+
+        fields_to_delete = [
+            'updatePriority',
+            'hasShortCut',
+            'isShortcut',
+            'shareToCommunitiesAllowed',
+            'accessedOn',
+            'metadataAccess',
+            'settings',
+        ]
+        for field in fields_to_delete:
+            if field in self.data:
+                del self.data[field] 
+
+
 class DimensionMember(object):
     """The class contains dimension member information"""
 
@@ -77,13 +138,14 @@ class Dimension(DimensionModel):
         return self.ticker_map.get(member_name.upper())
 
 
-class DateRange(object):
+class DateRange:
     """The class contains information about dataset's data range"""
 
     def __init__(self, data):
-        #self.start_date = datetime.strptime(data['startDate'], '%Y-%m-%dT%H:%M:%SZ')
-        #self.end_date = datetime.strptime(data['endDate'], '%Y-%m-%dT%H:%M:%SZ')
+        self.start_date = parse_date(data['startDate'])
+        self.end_date = parse_date(data['endDate'])
         self.frequencies = data['frequencies']
+
 
 class TimeSeriesAttribute(object):
     """This class contains information about dataset' s timeseries attributes"""

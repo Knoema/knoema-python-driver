@@ -387,7 +387,7 @@ class TestKnoemaClient(unittest.TestCase):
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names include metadata"""
   
-        data_frame, metadata = knoema.get('FDI_FLOW_CTRY', True,**{'Reporting country': 'AUS',
+        data_frame, _ = knoema.get('FDI_FLOW_CTRY', True,**{'Reporting country': 'AUS',
                                                     'Partner country/territory': 'w0',
                                                     'Measurement principle': 'DI',
                                                     'Type of FDI': 'T_FA_F',
@@ -412,7 +412,7 @@ class TestKnoemaClient(unittest.TestCase):
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata_transform(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names include metadata"""
   
-        data_frame, metadata = knoema.get('FDI_FLOW_CTRY', True,**{'Reporting country': 'AUS',
+        data_frame, _ = knoema.get('FDI_FLOW_CTRY', True,**{'Reporting country': 'AUS',
                                                     'Partner country/territory': 'w0',
                                                     'Measurement principle': 'DI',
                                                     'Type of FDI': 'T_FA_F',
@@ -511,7 +511,7 @@ class TestKnoemaClient(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             apicfg = knoema.ApiConfig()
             apicfg.host = 'knoema_incorect.com'
-            data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
+            _ = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
         self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))
 
     def test_incorrect_host_delete_dataset(self):
@@ -552,7 +552,7 @@ class TestKnoemaClient(unittest.TestCase):
     def test_get_data_with_partial_selection_with_metadata(self):
         """The method is testing getting series with partial selection"""
 
-        data_frame, metadata = knoema.get('IMFWEO2017Apr', True, subject = 'flibor6')
+        _, metadata = knoema.get('IMFWEO2017Apr', True, subject = 'flibor6')
         self.assertEqual(metadata.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
         sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')
@@ -563,7 +563,7 @@ class TestKnoemaClient(unittest.TestCase):
     def test_get_data_with_partial_selection_with_metadata_transform(self):
         """The method is testing getting series with partial selection"""
 
-        data_frame, metadata = knoema.get('IMFWEO2017Apr', True, subject = 'flibor6', frequency = 'A')
+        _, metadata = knoema.get('IMFWEO2017Apr', True, subject = 'flibor6', frequency = 'A')
         self.assertEqual(metadata.shape[1], 2)
         self.assertEqual(['Country', 'Subject', 'Frequency'], metadata.columns.names)
         sname = ('Japan', 'Six-month London interbank offered rate (LIBOR) (Percent)', 'A')

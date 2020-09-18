@@ -8,6 +8,24 @@ from knoema.api_definitions_sema import Company
 from knoema.api_definitions_search import SearchResults
 from knoema.upload_frame import FrameTransformerFactory, FileLayerWrapper
 
+def dataset(id):
+    """Use this function to get dataset metadata."""
+
+    config = ApiConfig()
+    client = ApiClient(config.host, config.app_id, config.app_secret)
+    client.check_correct_host()
+
+    ds = client.get_dataset_meta(id)
+    res = {}
+    res.update(ds.data)
+
+    range = client.get_daterange(id)
+    res['startDate'] = range.start_date
+    res['endDate'] = range.end_date
+    res['frequencies'] = range.frequencies
+
+    return res
+
 def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, separator = None, group_by = None, columns = None, **dim_values):
     """Use this function to get data from Knoema dataset."""
 

@@ -8,6 +8,8 @@ This is the official documentation for Knoema's Python Package. The package can 
 Installation
 ************
 
+ Note: Microsoft Visual C++ 14.0 or greater is required to install the package. You can get it from Microsoft site https://go.microsoft.com/fwlink/?LinkId=691126
+
 The installation process varies depending on your python version and system used. However, in most cases, the following should work::
 
         pip install knoema 
@@ -47,7 +49,7 @@ The following quick call can be used to retrieve a time-series from dataset (thr
 
 where:
 
-* 'IMFWEO2017Oct' this is a public dataset, that available for all users by reference https://knoema.com/IMFWEO2017Oct.
+* 'IMFWEO2017Oct' this is a dataset ID. Dataset ID can be found from the URL, if you open any dataset you will see it right after the hostname: https://knoema.com/IMFWEO2017Oct/imf-world-economic-outlook-weo-database-october-2017.
 * country and subject are dimensions names
 * AL is region id for Albania
 * region is synonymous for name of geographic dimension
@@ -116,7 +118,6 @@ The function, in this case, returns two dataframes - one with data, second with 
 Data Transformation
 ********************
 You can use transform parameter to apply transformation to requested data, like this::
-
 
    import knoema
    data_frame = knoema.get('IMFWEO2017Oct', country='Afghanistan', subject='ngdp', transform='PCH')

@@ -3,6 +3,7 @@
 from knoema.api_config import ApiConfig
 from knoema.api_client import ApiClient
 from knoema.data_reader import MnemonicsDataReader, StreamingDataReader, TransformationDataReader
+from knoema.data_reader import DimensionMetadataReader
 from knoema.api_definitions import is_equal_strings_ignore_case
 from knoema.api_definitions_sema import Company
 from knoema.api_definitions_search import SearchResults
@@ -25,6 +26,23 @@ def dataset(id):
     res['frequencies'] = range.frequencies
 
     return res
+
+def dimension(dataset, dimension):
+    """Use this function to get dimension metadata"""
+
+    config = ApiConfig()
+    client = ApiClient(config.host, config.app_id, config.app_secret)
+    client.check_correct_host()
+
+    if not dataset:
+        raise ValueError('Dataset id is not specified')
+
+    if not dimension:
+        raise ValueError('Dimension id is not specified')
+
+    reader = DimensionMetadataReader(client, dataset, dimension)
+
+    return reader.get()
 
 def get(dataset = None, include_metadata = False, mnemonics = None, transform = None, separator = None, group_by = None, columns = None, **dim_values):
     """Use this function to get data from Knoema dataset."""

@@ -5,6 +5,7 @@ from dateutil.relativedelta import relativedelta
 
 import pandas
 import knoema.api_definitions as definition
+import knoema.view_definitions as view_definition
 from urllib.parse import quote
 
 class DataReader(object):
@@ -1036,4 +1037,53 @@ class FormatHelper(object):
     def format_fq(date_point):
         quarter = (date_point.month - 1) // 3 + 1
         return '{}FQ{}'.format(date_point.year, quarter)
-    
+
+
+class DimensionMetadataReader:
+
+    def __init__(self, client, dataset, dimension):
+        self.client = client
+        self.dataset = dataset
+        self.dimension = dimension
+
+    def get(self):
+        dim_info = self.client.get_dimension(self.dataset, self.dimension)
+        view_model = view_definition.Dimension()
+        view_model.key = dim_info.key
+        view_model.id = dim_info.id
+        view_model.name = dim_info.name
+        view_model.isGeo = dim_info.is_geo
+        view_model.datasetId = self.dataset
+
+        for fields in dim_info.fields:
+            view_model.fields.append(view_definition.Field(fields))
+
+        frame_data = []
+        headers = ['key', 'name', 'level', 'parent key', 'parent id', 'parent name', 'hasdata']
+        header_filled = False
+
+        parents = {}
+        for item in dim_info.items:
+            parents[item.level] = {
+                'id': item.fields['id'] if 'id' in item.fields else None,
+                'key': item.key,
+                'name': item.name
+            }
+
+            parent = {'id': None, 'key': -1, 'name': None}
+            if item.level > 0:
+                parent = parents[item.level - 1]
+
+            row = [item.key, item.name, item.level, parent['key'], parent['id'], parent['name'], item.hasdata]
+            for field in item.fields:
+                if not header_filled:
+                    headers.append(field)
+                row.append(item.fields[field])
+
+            if not header_filled:
+                header_filled = True
+            frame_data.append(row)
+        
+        view_model.members = pandas.DataFrame(frame_data, columns=headers)
+
+        return view_model

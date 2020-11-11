@@ -112,7 +112,10 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
     if ds.type == 'Regular' and frequency != None:
         dim_values['frequency'] = frequency
 
-    reader = TransformationDataReader(client, dim_values, transform, frequency)
+    if ds.type == 'Regular' and columns != None:
+        reader = StreamingDataReader(client, dim_values, transform)
+    else:
+        reader = TransformationDataReader(client, dim_values, transform, frequency)
 
     reader.columns = columns
     reader.include_metadata = include_metadata

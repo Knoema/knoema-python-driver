@@ -784,6 +784,15 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.at[indx, sname]
         self.assertEqual(value, 8.692)
 
+    def test_getdata_with_columns(self):
+        """The method is testing getting data from dataset with region dimention by region id"""
+
+        data_frame = knoema.get('ERM', Company = '147', columns='*')
+
+        self.assertEqual(['Company', 'Kpi Type', 'Kpi', 'Frequency', 'Attribute'], data_frame.columns.names)
+        self.assertEqual(4, data_frame.columns.size)
+        self.assertEqual(('Shopify, Inc. Class A', 'Reported Metric', 'GPV', 'FQ', 'StatisticalDate'), data_frame.columns.values[1])
+
     def test_search_wrapper_search_for_timeseries(self):
         """The method is testing search wrapper to search for timeseries"""
 

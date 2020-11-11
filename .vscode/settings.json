@@ -1,8 +1,6 @@
 {
     "python.testing.pytestArgs": [
-        "--cov=knoema",  //If you want to debug a test comment this line https://pytest-cov.readthedocs.io/en/latest/debuggers.html
-        "--flakes",
-        //"--pep8",
+        "."
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,

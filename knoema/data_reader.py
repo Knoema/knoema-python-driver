@@ -1075,10 +1075,14 @@ class DimensionMetadataReader:
                 parent = parents[item.level - 1]
 
             row = [item.key, item.name, item.level, parent['key'], parent['id'], parent['name'], item.hasdata]
-            for field in item.fields:
+            for field in dim_info.fields:
                 if not header_filled:
-                    headers.append(field)
-                row.append(item.fields[field])
+                    headers.append(field['name'])
+
+                if field['name'] in item.fields:
+                    row.append(item.fields[field['name']])
+                else:
+                    row.append(None)
 
             if not header_filled:
                 header_filled = True

@@ -1,6 +1,6 @@
 """This module contains metadata definitions for Knoema API for semantic atlas"""
 
-from knoema.data_reader import TransformationDataReader
+from knoema.data_reader import TransformationDataReader, PivotResponseReader
 
 class Company(object):
     """"The class contains data related to a company like name and groups of indicators"""
@@ -60,9 +60,10 @@ class CompanyIndicator(object):
         desc = first_group['batchDesctiptor']
         pivot = self._client.get_data_by_json(desc)
 
-        reader =  TransformationDataReader(self._client, None, transform, None)
-        reader.dataset = ds
-        frame = reader.get_pandasframe_pivot(pivot)
+        tr_reader =  TransformationDataReader(self._client, None, transform, None)
+        tr_reader.dataset = ds
+        pivot_reader = PivotResponseReader(tr_reader, pivot)
+        frame = pivot_reader.get_pandasframe()
 
         return frame
 

@@ -839,7 +839,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         ticker = knoema.ticker('DDD')
 
-        self.assertEqual(ticker.name, '3D SYSTEMS')
+        self.assertEqual(ticker.name, '3D Systems Corporation')
         self.assertEqual(len(ticker.groups), 4)
         self.assertEqual(ticker.groups[0].name, 'HOLT Scorecards')
         self.assertEqual(len(ticker.groups[0].indicators), 23)

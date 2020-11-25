@@ -1,13 +1,13 @@
 from setuptools import setup
 
 def readme():
-    with open('README.rst') as readme_file:
+    with open('README.rst', encoding="utf8") as readme_file:
         return readme_file.read()
 
 setup(
   name = 'knoema',
   packages = ['knoema'],
-  version = '1.2.34',
+  version = '1.2.35',
   description = "Official Python package for Knoema's API",
   long_description=readme(),
   author = 'Knoema',

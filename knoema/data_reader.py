@@ -259,7 +259,7 @@ class PivotResponseReader(ResponseReader):
             if freq == "W":
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
             if freq == "FQ":
-                curr_date_val = FormatHelper.format_fq(curr_date_val)
+                curr_date_val = TimeFormat.format_statistical(curr_date_val, 'FQ')
             if detail_columns is not None:
                 columns = []
                 for column_name in detail_columns:
@@ -367,16 +367,10 @@ class StreamingResponseReader(ResponseReader):
 
     def _get_data_series(self, resp, detail_columns):
         series_map = {}
-        dict_with_delta = {
-            'A': relativedelta(years = 1),
-            'H': relativedelta(months = 6),
-            'Q': relativedelta(months = 3),
-            'FQ': relativedelta(months = 3),
-            'M': relativedelta(months = 1),
-            'W': timedelta(days = 7),
-            'D': timedelta(days = 1)}
+        dict_with_delta = TimeFormat.get_frequencies_delta()
 
         frequency_list = []
+        use_stat_format_for_date_label = self._get_use_stat_format_for_date_label(resp.series)
 
         detail_values = None
         for series_point in resp.series:  
@@ -397,12 +391,16 @@ class StreamingResponseReader(ResponseReader):
             
             delta = dict_with_delta[freq]
             series = KnoemaSeries(series_name, [], [], detail_columns)
-
+            date_labels = series_point['dateLabels'] if 'dateLabels' in series_point else None
             curr_date_val = data_begin_val
             for vi in range(0, len(all_values)):
                 val = all_values[vi]
                 if val is not None:
-                    series.index.append(curr_date_val if freq != 'FQ' else FormatHelper.format_fq(curr_date_val))
+                    date = curr_date_val if freq != 'FQ' else TimeFormat.format_statistical(curr_date_val, 'FQ')
+                    if freq in use_stat_format_for_date_label or date_labels is not None and date_labels[vi] is not None:
+                        date = TimeFormat.format_statistical(curr_date_val, freq) \
+                            if freq in use_stat_format_for_date_label else datetime.strptime(date_labels[vi], date_format)
+                    series.index.append(date)
                     series.values.append(val)
                     for ai in range(0, series.column_count):
                         series.column_values[ai].append(detail_values[ai][vi])
@@ -414,6 +412,47 @@ class StreamingResponseReader(ResponseReader):
             raise ValueError('Please provide a valid frequency list. You can request FQ or others frequencies not together.')
 
         return series_map
+
+    def _get_use_stat_format_for_date_label(self, series):
+        use_stat_format_for_date_label = {}
+        date_labels_by_freq = {}
+        has_date_labels_by_freq = {}
+        dict_with_delta = TimeFormat.get_frequencies_delta()
+        for series_point in series:  
+            freq = series_point['frequency']
+            if freq in use_stat_format_for_date_label:
+                continue
+            has_date_labels = 'dateLabels' in series_point
+            if freq in has_date_labels_by_freq and has_date_labels_by_freq[freq] != has_date_labels:
+                use_stat_format_for_date_label[freq] = True
+                continue
+            has_date_labels_by_freq[freq] = has_date_labels
+            if not has_date_labels:
+                continue
+
+            if freq not in date_labels_by_freq:
+                date_labels_by_freq[freq] = {}
+
+            date_labels = series_point['dateLabels']
+
+            all_values = series_point['values']  
+
+            date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if series_point['startDate'].endswith('Z') else '')
+            data_begin_val = datetime.strptime(series_point['startDate'], date_format)
+            if (freq == "W"):
+                data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
+            
+            delta = dict_with_delta[freq]
+            curr_date_val = data_begin_val
+            for vi in range(0, len(all_values)):
+                if curr_date_val in date_labels_by_freq[freq]:
+                    if date_labels[vi] is not None and date_labels_by_freq[freq][curr_date_val] != date_labels[vi]:
+                        use_stat_format_for_date_label[freq] = True
+                        break
+                else:
+                    date_labels_by_freq[freq][curr_date_val] = date_labels[vi]
+                curr_date_val += delta
+        return use_stat_format_for_date_label
 
     def _get_series_name(self, series_point):
         names = []
@@ -818,15 +857,7 @@ class StreamingDataReader(SelectionDataReader):
 
     def _get_time_point_amount(self, start_date, end_date, frequency):
         count = 0
-        dict_with_delta = {
-            'A': relativedelta(years = 1),
-            'H': relativedelta(months = 6),
-            'Q': relativedelta(months = 3),
-            'FQ': relativedelta(months = 3),
-            'M': relativedelta(months = 1),
-            'W': timedelta(days = 7),
-            'D': timedelta(days = 1)
-        }
+        dict_with_delta = TimeFormat.get_frequencies_delta()
 
         date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if start_date.endswith('Z') else '')
         data_begin_val = datetime.strptime(start_date, date_format)
@@ -893,7 +924,7 @@ class MnemonicsDataReader(DataReader):
             if (freq == "W"):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
             if (freq == 'FQ'):
-                curr_date_val = FormatHelper.format_fq(curr_date_val)
+                curr_date_val = TimeFormat.format_statistical(curr_date_val, 'FQ')
             series[series_name].add_value(series_point['Value'], curr_date_val, None)
 
         if 'FQ' in frequency_list and len(frequency_list) > 1:
@@ -1032,11 +1063,31 @@ class PandasHelper(object):
 
         return pandas_data_frame
 
-class FormatHelper(object):
+class TimeFormat(object):
     @staticmethod
-    def format_fq(date_point):
-        quarter = (date_point.month - 1) // 3 + 1
-        return '{}FQ{}'.format(date_point.year, quarter)
+    def format_statistical(date_point, freq):
+        return {
+            'FQ': lambda d: '{}FQ{}'.format(d.year, (d.month - 1) // 3 + 1),
+            'W': lambda d: TimeFormat.format_weekly(d)
+        }.get(freq, date_point)(date_point)
+
+    @staticmethod
+    def format_weekly(date):
+        iso_values = date.isocalendar()
+        iso_year = iso_values[0]
+        week_number = iso_values[1]
+        return '{}W{}'.format(iso_year, week_number)
+
+    @staticmethod
+    def get_frequencies_delta():
+        return {
+            'A': relativedelta(years = 1),
+            'H': relativedelta(months = 6),
+            'Q': relativedelta(months = 3),
+            'FQ': relativedelta(months = 3),
+            'M': relativedelta(months = 1),
+            'W': timedelta(days = 7),
+            'D': timedelta(days = 1)}
 
 
 class DimensionMetadataReader:

@@ -259,7 +259,7 @@ class PivotResponseReader(ResponseReader):
             if freq == "W":
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
             if freq == "FQ":
-                curr_date_val = FormatHelper.format_fq(curr_date_val)
+                curr_date_val = TimeFormat.format_fq(curr_date_val)
             if detail_columns is not None:
                 columns = []
                 for column_name in detail_columns:
@@ -367,16 +367,10 @@ class StreamingResponseReader(ResponseReader):
 
     def _get_data_series(self, resp, detail_columns):
         series_map = {}
-        dict_with_delta = {
-            'A': relativedelta(years = 1),
-            'H': relativedelta(months = 6),
-            'Q': relativedelta(months = 3),
-            'FQ': relativedelta(months = 3),
-            'M': relativedelta(months = 1),
-            'W': timedelta(days = 7),
-            'D': timedelta(days = 1)}
+        dict_with_delta = TimeFormat.get_frequencies_delta()
 
         frequency_list = []
+        dict_skip_date_title = self._get_use_date_title_by_frequencies(resp.series)
 
         detail_values = None
         for series_point in resp.series:  
@@ -397,12 +391,15 @@ class StreamingResponseReader(ResponseReader):
             
             delta = dict_with_delta[freq]
             series = KnoemaSeries(series_name, [], [], detail_columns)
-
+            date_titles = series_point['dateTitles'] if 'dateTitles' in series_point else None
             curr_date_val = data_begin_val
             for vi in range(0, len(all_values)):
                 val = all_values[vi]
                 if val is not None:
-                    series.index.append(curr_date_val if freq != 'FQ' else FormatHelper.format_fq(curr_date_val))
+                    date = curr_date_val if freq != 'FQ' else TimeFormat.format_fq(curr_date_val)
+                    if freq not in dict_skip_date_title and date_titles is not None and date_titles[vi] is not None:
+                        date = datetime.strptime(date_titles[vi], date_format)
+                    series.index.append(date)
                     series.values.append(val)
                     for ai in range(0, series.column_count):
                         series.column_values[ai].append(detail_values[ai][vi])
@@ -414,6 +411,42 @@ class StreamingResponseReader(ResponseReader):
             raise ValueError('Please provide a valid frequency list. You can request FQ or others frequencies not together.')
 
         return series_map
+
+    def _get_use_date_title_by_frequencies(self, series):
+        dict_skip_date_title = {}
+        date_titles_by_freq = {}
+        dict_with_delta = TimeFormat.get_frequencies_delta()
+        for series_point in series:  
+            freq = series_point['frequency']
+            if freq in dict_skip_date_title:
+                continue
+            if 'dateTitles' not in series_point:
+                dict_skip_date_title[freq] = True
+                continue
+
+            if freq not in date_titles_by_freq:
+                date_titles_by_freq[freq] = {}
+
+            date_titles = series_point['dateTitles']
+
+            all_values = series_point['values']  
+
+            date_format = '%Y-%m-%dT%H:%M:%S' + ('Z' if series_point['startDate'].endswith('Z') else '')
+            data_begin_val = datetime.strptime(series_point['startDate'], date_format)
+            if (freq == "W"):
+                data_begin_val = data_begin_val - timedelta(days = data_begin_val.weekday())
+            
+            delta = dict_with_delta[freq]
+            curr_date_val = data_begin_val
+            for vi in range(0, len(all_values)):
+                if curr_date_val in date_titles_by_freq[freq]:
+                    if date_titles[vi] is not None and date_titles_by_freq[freq][curr_date_val] != date_titles[vi]:
+                        dict_skip_date_title[freq] = True
+                        break
+                else:
+                    date_titles_by_freq[freq][curr_date_val] = date_titles[vi]
+                curr_date_val += delta
+        return dict_skip_date_title
 
     def _get_series_name(self, series_point):
         names = []
@@ -893,7 +926,7 @@ class MnemonicsDataReader(DataReader):
             if (freq == "W"):
                 curr_date_val = curr_date_val - timedelta(days = curr_date_val.weekday())
             if (freq == 'FQ'):
-                curr_date_val = FormatHelper.format_fq(curr_date_val)
+                curr_date_val = TimeFormat.format_fq(curr_date_val)
             series[series_name].add_value(series_point['Value'], curr_date_val, None)
 
         if 'FQ' in frequency_list and len(frequency_list) > 1:
@@ -1032,11 +1065,22 @@ class PandasHelper(object):
 
         return pandas_data_frame
 
-class FormatHelper(object):
+class TimeFormat(object):
     @staticmethod
     def format_fq(date_point):
         quarter = (date_point.month - 1) // 3 + 1
         return '{}FQ{}'.format(date_point.year, quarter)
+
+    @staticmethod
+    def get_frequencies_delta():
+        return {
+            'A': relativedelta(years = 1),
+            'H': relativedelta(months = 6),
+            'Q': relativedelta(months = 3),
+            'FQ': relativedelta(months = 3),
+            'M': relativedelta(months = 1),
+            'W': timedelta(days = 7),
+            'D': timedelta(days = 1)}
 
 
 class DimensionMetadataReader:

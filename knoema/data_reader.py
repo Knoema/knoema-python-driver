@@ -370,7 +370,7 @@ class StreamingResponseReader(ResponseReader):
         dict_with_delta = TimeFormat.get_frequencies_delta()
 
         frequency_list = []
-        dict_skip_date_title = self._get_use_date_title_by_frequencies(resp.series)
+        dict_skip_date_label = self._get_skip_date_label_by_frequencies(resp.series)
 
         detail_values = None
         for series_point in resp.series:  
@@ -391,15 +391,15 @@ class StreamingResponseReader(ResponseReader):
             
             delta = dict_with_delta[freq]
             series = KnoemaSeries(series_name, [], [], detail_columns)
-            date_titles = series_point['dateTitles'] if 'dateTitles' in series_point else None
+            date_labels = series_point['dateLabels'] if 'dateLabels' in series_point else None
             curr_date_val = data_begin_val
             for vi in range(0, len(all_values)):
                 val = all_values[vi]
                 if val is not None:
                     date = curr_date_val if freq != 'FQ' else TimeFormat.format_statistical(curr_date_val, 'FQ')
-                    if date_titles is not None and date_titles[vi] is not None:
+                    if date_labels is not None and date_labels[vi] is not None:
                         date = TimeFormat.format_statistical(curr_date_val, freq) \
-                            if freq in dict_skip_date_title else datetime.strptime(date_titles[vi], date_format)
+                            if freq in dict_skip_date_label else datetime.strptime(date_labels[vi], date_format)
                     series.index.append(date)
                     series.values.append(val)
                     for ai in range(0, series.column_count):
@@ -413,22 +413,22 @@ class StreamingResponseReader(ResponseReader):
 
         return series_map
 
-    def _get_use_date_title_by_frequencies(self, series):
-        dict_skip_date_title = {}
-        date_titles_by_freq = {}
+    def _get_skip_date_label_by_frequencies(self, series):
+        dict_skip_date_label = {}
+        date_labels_by_freq = {}
         dict_with_delta = TimeFormat.get_frequencies_delta()
         for series_point in series:  
             freq = series_point['frequency']
-            if freq in dict_skip_date_title:
+            if freq in dict_skip_date_label:
                 continue
-            if 'dateTitles' not in series_point:
-                dict_skip_date_title[freq] = True
+            if 'dateLabels' not in series_point:
+                dict_skip_date_label[freq] = True
                 continue
 
-            if freq not in date_titles_by_freq:
-                date_titles_by_freq[freq] = {}
+            if freq not in date_labels_by_freq:
+                date_labels_by_freq[freq] = {}
 
-            date_titles = series_point['dateTitles']
+            date_labels = series_point['dateLabels']
 
             all_values = series_point['values']  
 
@@ -440,14 +440,14 @@ class StreamingResponseReader(ResponseReader):
             delta = dict_with_delta[freq]
             curr_date_val = data_begin_val
             for vi in range(0, len(all_values)):
-                if curr_date_val in date_titles_by_freq[freq]:
-                    if date_titles[vi] is not None and date_titles_by_freq[freq][curr_date_val] != date_titles[vi]:
-                        dict_skip_date_title[freq] = True
+                if curr_date_val in date_labels_by_freq[freq]:
+                    if date_labels[vi] is not None and date_labels_by_freq[freq][curr_date_val] != date_labels[vi]:
+                        dict_skip_date_label[freq] = True
                         break
                 else:
-                    date_titles_by_freq[freq][curr_date_val] = date_titles[vi]
+                    date_labels_by_freq[freq][curr_date_val] = date_labels[vi]
                 curr_date_val += delta
-        return dict_skip_date_title
+        return dict_skip_date_label
 
     def _get_series_name(self, series_point):
         names = []

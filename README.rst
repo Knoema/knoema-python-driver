@@ -114,6 +114,42 @@ By default the function knoema.get returns the one dataframe with data. If you w
      
 The function, in this case, returns two dataframes - one with data, second with metadata.    
 
+******************************************************
+Accessing dimension hierarchy
+******************************************************
+Don't forger to import knoema library::
+
+     import knoema
+
+When you get data with knoema.get, dimension hierarchy is not automatically included. In this example, the locations ‘World’, ‘Africa’, and ‘Algeria’ are all returned as Location::
+
+     df = knoema.get('kaziajg', frequency='D', Location='World;Africa;Algeria', Indicator='A1')
+
+Let’s say that you want to look only at African countries. First, you need to get the dimension information for that dataset ID (“kaziajg”) and dimension (“Location”)::
+
+     dims = knoema.dimension("kaziajg", "Location")
+
+Then, you need to filter your data down to the location of interest::
+
+     def filter_by_dimension_parent(_df, _dims, _parent):
+         # Get data for only a subset within the hierarchy
+
+         # Input the outputs of knoema.get; knoema.dimension; and the dimension member to filter on
+         # Output the knoema.get results filtered down to only the dimension member specified by parent
+         df_output = _df.copy()
+         level = _df.columns.names.index(_dims.name)
+
+         for column in _df:
+             dim = column[level]
+             df_dim = _dims.members[_dims.members['name'] == dim]
+             if df_dim['parent name'].values[level] != _parent:
+                 df_output = df_output.drop(column, axis=1)
+
+         return df_output
+         
+
+     df_only_African_countries = filter_by_dimension_parent(df, dims, "Africa")
+
 ********************
 Data Transformation
 ********************

@@ -370,7 +370,7 @@ class StreamingResponseReader(ResponseReader):
         dict_with_delta = TimeFormat.get_frequencies_delta()
 
         frequency_list = []
-        dict_skip_date_label = self._get_skip_date_label_by_frequencies(resp.series)
+        use_stat_format_for_date_label = self._get_use_stat_format_for_date_label(resp.series)
 
         detail_values = None
         for series_point in resp.series:  
@@ -397,9 +397,9 @@ class StreamingResponseReader(ResponseReader):
                 val = all_values[vi]
                 if val is not None:
                     date = curr_date_val if freq != 'FQ' else TimeFormat.format_statistical(curr_date_val, 'FQ')
-                    if date_labels is not None and date_labels[vi] is not None:
+                    if freq in use_stat_format_for_date_label or date_labels is not None and date_labels[vi] is not None:
                         date = TimeFormat.format_statistical(curr_date_val, freq) \
-                            if freq in dict_skip_date_label else datetime.strptime(date_labels[vi], date_format)
+                            if freq in use_stat_format_for_date_label else datetime.strptime(date_labels[vi], date_format)
                     series.index.append(date)
                     series.values.append(val)
                     for ai in range(0, series.column_count):
@@ -413,16 +413,21 @@ class StreamingResponseReader(ResponseReader):
 
         return series_map
 
-    def _get_skip_date_label_by_frequencies(self, series):
-        dict_skip_date_label = {}
+    def _get_use_stat_format_for_date_label(self, series):
+        use_stat_format_for_date_label = {}
         date_labels_by_freq = {}
+        has_date_labels_by_freq = {}
         dict_with_delta = TimeFormat.get_frequencies_delta()
         for series_point in series:  
             freq = series_point['frequency']
-            if freq in dict_skip_date_label:
+            if freq in use_stat_format_for_date_label:
                 continue
-            if 'dateLabels' not in series_point:
-                dict_skip_date_label[freq] = True
+            has_date_labels = 'dateLabels' in series_point
+            if freq in has_date_labels_by_freq and has_date_labels_by_freq[freq] != has_date_labels:
+                use_stat_format_for_date_label[freq] = True
+                continue
+            has_date_labels_by_freq[freq] = has_date_labels
+            if not has_date_labels:
                 continue
 
             if freq not in date_labels_by_freq:
@@ -442,12 +447,12 @@ class StreamingResponseReader(ResponseReader):
             for vi in range(0, len(all_values)):
                 if curr_date_val in date_labels_by_freq[freq]:
                     if date_labels[vi] is not None and date_labels_by_freq[freq][curr_date_val] != date_labels[vi]:
-                        dict_skip_date_label[freq] = True
+                        use_stat_format_for_date_label[freq] = True
                         break
                 else:
                     date_labels_by_freq[freq][curr_date_val] = date_labels[vi]
                 curr_date_val += delta
-        return dict_skip_date_label
+        return use_stat_format_for_date_label
 
     def _get_series_name(self, series_point):
         names = []

@@ -117,7 +117,7 @@ The function, in this case, returns two dataframes - one with data, second with 
 ******************************************************
 Accessing dimension hierarchy
 ******************************************************
-Don't forger to import knoema library::
+Don't forget to import knoema library::
 
      import knoema
 

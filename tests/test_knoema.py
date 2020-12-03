@@ -793,6 +793,19 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(4, data_frame.columns.size)
         self.assertEqual(('Shopify, Inc. Class A', 'Reported Metric', 'GPV', 'FQ', 'StatisticalDate'), data_frame.columns.values[1])
 
+    def test_getdata_datelabels(self):
+        """The method is testing getting data from dataset with region dimention by region id"""
+
+        data_frame = knoema.get('1010DDCDYOY072020', Company = '147')
+
+        self.assertEqual(['Category', 'Company', 'Country', 'Indicator', 'Frequency'], data_frame.columns.names)
+        sname = ('Shopify', 'SHOPIFY', 'US', 'Debit Avg Customer Spend YoY', 'FQ')
+
+        # this is FQ dateLabel
+        value = data_frame.at[datetime.datetime(2013, 3, 31), sname]
+
+        self.assertEqual(value, -0.1537901182)
+
     def test_search_wrapper_search_for_timeseries(self):
         """The method is testing search wrapper to search for timeseries"""
 

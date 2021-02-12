@@ -88,6 +88,12 @@ class TestKnoemaClient(unittest.TestCase):
         value = data_frame.at[indx, sname]
         self.assertEqual(value, 22063.044)
 
+    def test_streaming_more_than_1000(self):
+        """The method is testing getting multiple series by dimension member ids and time range"""
+        data_frame = knoema.get('COMTRADE2015R1', **{'Reporter': 'AFRICA', 'Partner': 'AFRICA', 'Trade Flow': '1', 'Indicator': 'KN.VAL'})
+        self.assertEqual(data_frame.shape[0], 31)
+        self.assertEqual(data_frame.shape[1], 7884)
+   
     def test_getdata_singleseries_difffrequencies_by_member_id(self):
         """The method is testing getting single series on different frequencies by dimension member ids"""
 

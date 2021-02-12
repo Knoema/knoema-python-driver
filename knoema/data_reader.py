@@ -581,6 +581,12 @@ class TransformationDataReader(SelectionDataReader):
             return response_reader.get_pandasframe()
 
         if isinstance(data_resp, definition.RawDataResponse):
+            token = data_resp.continuation_token
+            while token is not None:
+                res2 = self.client.get_data_raw_with_token(token)
+                data_resp.series += res2.series
+                token = res2.continuation_token
+
             response_reader = StreamingResponseReader(self, data_resp)
             return response_reader.get_pandasframe()
 

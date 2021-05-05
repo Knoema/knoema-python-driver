@@ -899,6 +899,10 @@ class TestKnoemaClient(unittest.TestCase):
             self.assertEqual(frame.data.shape[0], 10)
             self.assertEqual(frame.data.shape[1], 1)
 
+    def test_noaggregation(self):
+        data = knoema.get(**{"dataset" : "IMFWEO2020Oct", "country": "United States", "subject": "Population (Persons)", "frequency" : "Q" , "transform": 'NOAGG'})
+        self.assertEqual(data.shape[1], 0)
+
     def test_upload_generated_frames(self):
         tuples = list(zip(*[['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux'], ['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two']]))
         index = pandas.MultiIndex.from_tuples(tuples, names=['first', 'second'])

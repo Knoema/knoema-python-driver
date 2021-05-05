@@ -743,8 +743,6 @@ class StreamingDataReader(SelectionDataReader):
                 dim_values['frequency'] = frequency
             if timerange != None:
                 dim_values['timerange'] = timerange
-            if self.transform != None:
-                dim_values['transform'] = self.transform
 
             self.dim_values = dim_values
             pivot_req = self._create_pivot_request()

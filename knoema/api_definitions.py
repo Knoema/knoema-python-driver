@@ -271,6 +271,16 @@ class PivotRequest(object):
             
         return json.dumps(requestvalues)
 
+class DataAPIRequest(object):
+    """The class contains API Data 2.0 request"""
+
+    def __init__(self, filters):
+        self.filters = filters
+
+    def save_to_json(self):
+        """The method saves data to json from object"""
+        return json.dumps(self.filters)
+
 class DetailsResponse(object):
     def __init__(self, data):
         self.columns = data['columns']

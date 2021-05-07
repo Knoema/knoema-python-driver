@@ -6,7 +6,6 @@ from dateutil.relativedelta import relativedelta
 import pandas
 import knoema.api_definitions as definition
 import knoema.view_definitions as view_definition
-from urllib.parse import quote
 
 class DataReader(object):
     """This class read data from Knoema and transform it to pandas frame"""
@@ -575,7 +574,7 @@ class TransformationDataReader(SelectionDataReader):
         super().__init__(client, dim_values)
 
     def get_pandasframe(self):
-        data_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_query())
+        data_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_filters())
         if isinstance(data_resp, definition.DetailsResponse):
             response_reader = DetailsResponseReader(self, data_resp)
             return response_reader.get_pandasframe()
@@ -593,16 +592,16 @@ class TransformationDataReader(SelectionDataReader):
         response_reader = PivotResponseReader(self, data_resp)
         return response_reader.get_pandasframe()
 
-    def _get_data_query(self):
+    def _get_data_filters(self):
         filter_dims = {}
         passed_params = ['timerange', 'transform']
 
         for name, value in self.dim_values.items():
             if name.lower() in passed_params:
-                filter_dims[name] = quote(value)
+                filter_dims[name] = value
                 continue
             if definition.is_equal_strings_ignore_case(name, 'datecolumn') and self.dataset.type != 'Regular':
-                filter_dims['datecolumn'] = quote(value)
+                filter_dims['datecolumn'] = value
                 continue
 
             splited_values = [x for x in value.split(self.separator) if x] if isinstance(value, str) else value
@@ -618,7 +617,7 @@ class TransformationDataReader(SelectionDataReader):
             if not splited_values:
                 raise ValueError('Selection for dimension {} is empty'.format(dim.name))
 
-            filter_dims[dim.id] =  self.separator.join(quote(s) for s in splited_values)
+            filter_dims[dim.id] =  self.separator.join(s for s in splited_values)
 
         if self.include_metadata:
             filter_dims['metadata'] = 'true'
@@ -626,7 +625,7 @@ class TransformationDataReader(SelectionDataReader):
         if self.separator != ',':
              filter_dims['separator'] = self.separator
 
-        return "&".join("=".join((str(key), str(value))) for key, value in filter_dims.items())
+        return definition.DataAPIRequest(filter_dims)
 
 class StreamingDataReader(SelectionDataReader):
 

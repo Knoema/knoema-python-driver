@@ -853,6 +853,41 @@ class TestKnoemaClient(unittest.TestCase):
 
             break
 
+    def test_too_long_data_url(self):
+        """The method is testing issue with loo long get query string"""
+        subject = ['Gross domestic product, constant prices (Percent change)',
+            'Gross domestic product, constant prices (Percent change (market exchange rates))',
+            'Gross domestic product, current prices (U.S. dollars)',
+            'Rubber, No.1 Rubber Smoked Sheet, FOB Maylaysian/Singapore, US cents per pound (U.S. cents)',
+            'Gross domestic product, current prices (Purchasing power parity; international dollars)',
+            'Gross national savings (Percent of GDP)',
+            'Total investment (Percent of GDP)',
+            'Inflation, average consumer prices (Percent change)',
+            'Inflation, end of period consumer prices (Percent change)',
+            'Trade volume of goods and services (Percent change)',
+            'Volume of imports of goods and services (Percent change)',
+            'Volume of Imports of goods (Percent change)',
+            'Volume of exports of goods and services (Percent change)',
+            'Volume of exports of goods (Percent change)',
+            'Current account balance (U.S. dollars)',
+            'Commodity Price Index includes both Fuel and Non-Fuel Price Indices (Index, 2005=100)',
+            'Commodity Non-Fuel Price Index includes Food and Beverages and Industrial Inputs Price Indices (Index, 2005=100)',
+            'Commodity Industrial Inputs Price Index includes Agricultural Raw Materials and Metals Price Indices (Index, 2005=100)',
+            'Coal, Australian thermal coal, 1200- btu/pound, less than 1% sulfur, 14% ash, FOB Newcastle/Port Kembla, US$ per metric tonne (U.S. dollars)',
+            'Coal, South African export price, US$ per metric tonne (U.S. dollars)',
+            'Commodity Coal Price Index includes Australian and South African Coal (Index, 2005=100)',
+            'Commodity Fuel (energy) Index includes Crude oil (petroleum), Natural Gas, and Coal Price Indices (Index, 2005=100)',
+            'Commodity Natural Gas Price Index includes European, Japanese, and American Natural Gas Price Indices (Index, 2005=100)',
+            'Crude Oil (petroleum),  Dated Brent, light blend 38 API, fob U.K., US$ per barrel (U.S. dollars)',
+            'Crude Oil (petroleum), Price index simple average of three spot prices (APSP); Dated Brent, West Texas Intermediate, and the Dubai Fateh (Index, 2005=100)',
+            'Coffee, Robusta, International Coffee Organization New York cash price, ex-dock New York, US cents per pound (U.S. cents)',
+            'Commodity Beverage Price Index includes Coffee, Tea, and Cocoa (Index, 2005=100)',
+            'Commodity Cereals Price Index includes Wheat, Maize (Corn), Rice, and Barley (Index, 2005=100)',
+            'Commodity Coffee Price Index includes Other Mild Arabicas and Robusta (Index, 2005=100)']
+        separator = ";;"
+        frame = knoema.get("IMFWEO2021Apr", country="World", separator=separator, subject=separator.join(subject))
+        self.assertEqual(frame.shape[1], len(subject))
+
     def test_ticker_endpoint(self):
         """Testing ticker endpoint"""
 

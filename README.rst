@@ -21,19 +21,17 @@ Alternatively, on some systems, python3 may use a different pip executable and m
 *************
 Configuration
 *************
-By default the package allows you to work only with public datasets from the site knoema.com.
+Authorization is needed to increase the number of requests permitted and to access data that is not publicly available to all users within the platform. The application created under your account shares the same access rights through the API as you enjoy through registered access to your Knoema system.
 
-If you want work with private datasets, you need to use the next code::
+Step 1: Get App ID and App Secret. Log into a Knoema system (the host), open the link {host}/user/apps, click Create New, give your app a name, and click Save. 
+ 
+Step 2: In python, authenticate using the following code, where Host is the Knoema system (e.g., knoema.com) you used to generate the App ID and App Secret in Step 1::
 
     import knoema
     apicfg = knoema.ApiConfig()
-    apicfg.host = 'knoema.com'
-    apicfg.app_id = "some_app_id"
-    apicfg.app_secret = "some_app_secret"
-
-You can get parameters app_id and app_secret after registering on the site knoema.com, in the section "My profile - Apps - create new" (or use existing applications).
-
-Also, you can use other hosts supported by knoema.
+    apicfg.host = 'Host'
+    apicfg.app_id = 'App ID'
+    apicfg.app_secret = 'App Secret'
 
 *******************************
 Retrieving series from datasets

@@ -16,5 +16,5 @@ setup(
   url = 'https://github.com/Knoema/knoema-python-driver',
   keywords = ['API', 'knoema'],
   classifiers = ['Development Status :: 5 - Production/Stable', 'Programming Language :: Python :: 3 :: Only'],
-  install_requires=['pandas', 'pytest-shutil', 'python-csv']
+  install_requires=['pandas', 'pytest-shutil']
 )

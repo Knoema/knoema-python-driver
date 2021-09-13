@@ -8,8 +8,6 @@ This is the official documentation for Knoema's Python Package. The package can 
 Installation
 ************
 
- Note: Microsoft Visual C++ 14.0 or greater is required to install the package. You can get it from Microsoft site https://go.microsoft.com/fwlink/?LinkId=691126
-
 The installation process varies depending on your python version and system used. However, in most cases, the following should work::
 
         pip install knoema 

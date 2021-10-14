@@ -16,7 +16,7 @@ class SearchConfig(object):
     def build_search_url(self, query):
         quoted_query = urllib.parse.quote(query)
         url = 'https://{}/api/1.0/search?query={}&scope=instant,semantic&count=8&version=4&host={}&lang={}&sessionId={}&access_token={}'
-        url = url.format(self.search_host, quoted_query, self.host, self.lang, self.session_id, self.access_token)
+        url = url.format(self.search_host, quoted_query, self.host, self.lang, self.session_id, self.access_token or "")
 
         if self.community_id:
            url += '&communityId={}'.format(self.community_id)

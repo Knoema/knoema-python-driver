@@ -12,7 +12,7 @@ class TestKnoemaClient(unittest.TestCase):
 
     def setUp(self):
         apicfg = knoema.ApiConfig()
-        apicfg.host = self.base_host
+        apicfg.host = os.environ['BASE_HOST'] if 'BASE_HOST' in os.environ else self.base_host
         apicfg.app_id = os.environ['KNOEMA_APP_ID'] if 'KNOEMA_APP_ID' in os.environ else 'FzOYqDg'
         apicfg.app_secret = os.environ['KNOEMA_APP_SECRET'] if 'KNOEMA_APP_SECRET' in os.environ else 'SPrvmY8eGRcGA'
 

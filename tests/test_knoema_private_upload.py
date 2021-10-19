@@ -1,4 +1,5 @@
-"""This is test module for knoema client"""
+"""This is test module for knoema client (Upload)"""
+"""Works only with special credentials"""
 
 import unittest
 import datetime
@@ -9,15 +10,15 @@ import os
 import numpy
 
 class TestKnoemaClient(unittest.TestCase):
-    """This is class with knoema client unit tests"""
+    """This is class with knoema client unit tests (Upload)"""
 
     base_host = 'knoema.com'
 
     def setUp(self):
         apicfg = knoema.ApiConfig()
         apicfg.host = os.environ['BASE_HOST'] if 'BASE_HOST' in os.environ else self.base_host
-        apicfg.app_id = os.environ['KNOEMA_APP_ID'] if 'KNOEMA_APP_ID' in os.environ else 'FzOYqDg'
-        apicfg.app_secret = os.environ['KNOEMA_APP_SECRET'] if 'KNOEMA_APP_SECRET' in os.environ else 'SPrvmY8eGRcGA'
+        apicfg.app_id = os.environ['KNOEMA_APP_ID'] if 'KNOEMA_APP_ID' in os.environ else ''
+        apicfg.app_secret = os.environ['KNOEMA_APP_SECRET'] if 'KNOEMA_APP_SECRET' in os.environ else ''
 
     def test_delete_dataset_negative(self):
         """The method is negative test on dataset deletion"""
@@ -66,7 +67,7 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(len(res), 7)
 
     def test_upload_frames_from_existing_datasets(self):
-        frame = knoema.get('IMFWEO2017Oct', country='Albania;United States;Italy', subject='ngdp', timerange = '2015-2020')
+        frame = knoema.get('xmhdwqf', company='UBER', indicator='Annual', frequency='A', timerange='2018-2020')
         res = knoema.upload(frame, name = 'Test dataset')
 
         self.assertIs(type(res), str)

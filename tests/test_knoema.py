@@ -1,12 +1,9 @@
 """This is test module for knoema client"""
 
 import unittest
-import datetime
 import knoema
-import urllib
 import pandas
 import os
-import numpy
 
 class TestKnoemaClient(unittest.TestCase):
     """This is class with knoema client unit tests"""
@@ -22,129 +19,132 @@ class TestKnoemaClient(unittest.TestCase):
     def test_getdata_singleseries_by_member_id(self):
         """The method is testing getting single series by dimension member ids"""
 
-        data_frame = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
-        self.assertEqual(data_frame.shape[0], 43)
+        data_frame = knoema.get('xmhdwqf', company='c1', indicator='ind_a')
+        self.assertEqual(data_frame.shape[0], 11)
         self.assertEqual(data_frame.shape[1], 1)
 
-        self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
+        self.assertEqual(['Company', 'Indicator', 'Frequency'], data_frame.columns.names)
 
         indx = data_frame.first_valid_index()
-        sname = ('Albania', 'Gross domestic product, current prices (National currency)', 'A')
+        sname = ('BOX', 'Annual', 'A')
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 18.489)
+        self.assertEqual(value, 85.50)
 
-        indx = data_frame.index[42]
+        indx = data_frame.index[10]
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 2292.486)
+        self.assertEqual(value, 15.62)
 
     def test_getdata_multiseries_by_member_id(self):
         """The method is testing getting multiple series by dimension member ids"""
 
-        data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp')
-        self.assertEqual(data_frame.shape[0], 43)
-        self.assertEqual(data_frame.shape[1], 6)
+        data_frame = knoema.get('xmhdwqf', company='c1;c2', indicator='ind_m;ind_a')
+        self.assertEqual(data_frame.shape[0], 56)
+        self.assertEqual(data_frame.shape[1], 4)
 
-        self.assertEqual(['Country', 'Subject', 'Frequency'], data_frame.columns.names)
+        self.assertEqual(['Company', 'Indicator', 'Frequency'], data_frame.columns.names)
 
-        indx = data_frame.first_valid_index()
-        sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
+        indx = data_frame.index[7]
+        sname = ('BOX', 'Monthly', 'M')
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 2862.475)
+        self.assertEqual(value, 23.08)
 
-        indx = data_frame.index[42]
+        indx = data_frame.index[55]
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 23760.331)
+        self.assertEqual(value, 19.71)
 
     def test_getdata_multiseries_by_member_name(self):
         """The method is testing getting data by dimension member names"""
 
-        subj_names = 'Gross domestic product, current prices (National currency);population (persons)'
-        data_frame = knoema.get('IMFWEO2017Apr', country='albania;afghanistan;united states', subject=subj_names)
-        self.assertEqual(data_frame.shape[0], 43)
-        self.assertEqual(data_frame.shape[1], 6)
+        company_names = 'BOX;UBER'
+        indicator_names = 'Monthly;Annual'
+        data_frame = knoema.get('xmhdwqf', company=company_names, indicator=indicator_names)
+        self.assertEqual(data_frame.shape[0], 56)
+        self.assertEqual(data_frame.shape[1], 4)
 
-        indx = data_frame.first_valid_index()
-        sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
-        value = data_frame.at[indx, sname]
-        self.assertEqual(value, 2862.475)
+        self.assertEqual(['Company', 'Indicator', 'Frequency'], data_frame.columns.names)
 
-        indx = data_frame.index[42]
+        indx = data_frame.index[7]
+        sname = ('BOX', 'Monthly', 'M')
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 23760.331)
+        self.assertEqual(value, 23.08)
+
+        indx = data_frame.index[55]
+        value = data_frame.at[indx, sname]
+        self.assertEqual(value, 19.71)
 
     def test_getdata_multiseries_by_member_id_range(self):
         """The method is testing getting multiple series by dimension member ids and time range"""
-        data_frame = knoema.get('IMFWEO2017Apr', country='914;512;111', subject='lp;ngdp', timerange='2015-2020')
+        data_frame = knoema.get('xmhdwqf', company='c1;c2', indicator='ind_a', timerange='2017-2019')
 
-        self.assertEqual(data_frame.shape[0], 6)
-        self.assertEqual(data_frame.shape[1], 6)
+        self.assertEqual(data_frame.shape[0], 11)
+        self.assertEqual(data_frame.shape[1], 2)
 
         indx = data_frame.first_valid_index()
-        sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
+        sname = ('UBER', 'Annual', 'A')
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 18036.650)
+        self.assertEqual(value, 53.03)
 
         indx = data_frame.last_valid_index()
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 22063.044)
+        self.assertEqual(value, 99.15)
 
     def test_streaming_more_than_1000(self):
         """The method is testing getting multiple series by dimension member ids and time range"""
-        data_frame = knoema.get('COMTRADE2015R1', **{'Reporter': 'AFRICA', 'Partner': 'AFRICA', 'Trade Flow': '1', 'Indicator': 'KN.VAL'})
-        self.assertEqual(data_frame.shape[0], 31)
-        self.assertEqual(data_frame.shape[1], 7884)
+        data_frame = knoema.get('nama_r_e3gdp', **{'Measure': 'Euro per inhabitant'})
+        self.assertEqual(data_frame.shape[0], 12)
+        self.assertEqual(data_frame.shape[1], 1738)
    
     def test_getdata_singleseries_difffrequencies_by_member_id(self):
         """The method is testing getting single series on different frequencies by dimension member ids"""
 
-        data_frame = knoema.get('MEI_BTS_COS_2015', location='AT', subject='BSCI', measure='blsa')
-        self.assertEqual(data_frame.shape[1], 2)
+        data_frame = knoema.get('xmhdwqf', company='c1', indicator='ind_multi')
+        self.assertEqual(data_frame.shape[1], 3)
 
         indx = data_frame.first_valid_index()
-        sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'M')
+        sname = ('BOX', 'Multi', 'A')
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, -5.0)
+        self.assertEqual(value, 60.24)
 
-        value = data_frame.at[datetime.datetime(2017, 5, 1), sname]
-        self.assertEqual(value, 2.0)
+        value = data_frame.at[pandas.to_datetime('2018-01-01'), sname]
+        self.assertEqual(value, 80.56)
 
         indx = data_frame.first_valid_index()
-        sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'Q')
+        sname = ('BOX', 'Multi', 'Q')
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, -5.233333)
+        self.assertEqual(value, 47.82)
 
-        value = data_frame.at[datetime.datetime(2017, 1, 1), sname]
-        self.assertEqual(value, 1.566667)
+        value = data_frame.at[pandas.to_datetime('2017-01-01'), sname]
+        self.assertEqual(value, 50.28)
 
     def test_getdata_multiseries_singlefrequency_by_member_id(self):
         """The method is testing getting mulitple series with one frequency by dimension member ids"""
 
-        data_frame = knoema.get('MEI_BTS_COS_2015', location=['AT', 'AU'], subject='BSCI', measure='blsa', frequency='Q')
-        self.assertEqual(data_frame.shape[1], 2)
+        data_frame = knoema.get('xmhdwqf', company='c2', indicator='ind_multi', frequency='M')
+        self.assertEqual(data_frame.shape[1], 1)
 
-        sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'Q')
-        value = data_frame.at[datetime.datetime(2017, 1, 1), sname]
-        self.assertEqual(value, 1.566667)
+        sname = ('UBER', 'Multi', 'M')
+        value = data_frame.at[pandas.to_datetime('2017-01-01'), sname]
+        self.assertEqual(value, 27.91)
 
     def test_getdata_multiseries_multifrequency_by_member_id(self):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids"""
 
-        data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;AU', subject='BSCI', measure='blsa', frequency='Q;M')
-        self.assertEqual(data_frame.shape[1], 4)
+        data_frame = knoema.get('xmhdwqf', company='c1;c2', indicator='ind_a;ind_multi', frequency='A;M')
+        self.assertEqual(data_frame.shape[1], 6)
 
-        sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'M')
-        value = data_frame.at[datetime.datetime(2017, 3, 1), sname]
-        self.assertEqual(value, 2.4)
+        sname = ('BOX', 'Annual', 'A')
+        value = data_frame.at[pandas.to_datetime('2013-01-01'), sname]
+        self.assertEqual(value, 77.93)
 
     def test_getdata_multiseries_multifrequency_by_member_id_range(self):
         """The method is testing getting mulitple series queriing mulitple frequencies by dimension member ids with time range"""
 
-        data_frame = knoema.get('MEI_BTS_COS_2015', location='AT;BE', subject='BSCI', measure='blsa', frequency='Q;M', timerange='2010M1-2015M12')
-        self.assertEqual(data_frame.shape[1], 4)
+        data_frame = knoema.get('xmhdwqf', company='c1;c2', indicator='ind_a;ind_multi', frequency='A;M', timerange='2017M1-2020M12')
+        self.assertEqual(data_frame.shape[1], 6)
 
-        sname = ('Austria', 'Confidence indicators', 'Balance; Seasonally adjusted', 'M')
-        value = data_frame.at[datetime.datetime(2012, 12, 1), sname]
-        self.assertEqual(value, -12.4)
+        sname = ('BOX', 'Multi', 'A')
+        value = data_frame.at[pandas.to_datetime('2018-01-01'), sname]
+        self.assertEqual(value, 80.56)
 
     def test_none_dataset(self):
         """The method is testing if dataset set up as None"""
@@ -191,17 +191,17 @@ class TestKnoemaClient(unittest.TestCase):
         """The method is testing if there are incorrect in dimension selection"""
 
         with self.assertRaises(ValueError) as context:
-            knoema.get('IMFWEO2017Apr', country='914;512;111', subject='LP;N1GDP')
+            knoema.get('xmhdwqf', company='c1;c2', indicator='ind_a;ind_multi;ind')
 
-        self.assertTrue('Selection for dimension Subject contains invalid elements' in str(context.exception))
+        self.assertTrue('Selection for dimension Indicator contains invalid elements' in str(context.exception))
 
     def test_wrong_dimension_selection_transform(self):
         """The method is testing if there are incorrect in dimension selection"""
 
         with self.assertRaises(ValueError) as context:
-            knoema.get('IMFWEO2017Apr', country='914;512;111', subject='LP;N1GDP', frequency='A')
+            knoema.get('xmhdwqf', company='c1;c2', indicator='ind_a;ind_multi;ind', frequency='A', transform='sum')
 
-        self.assertTrue('Selection for dimension Subject contains invalid elements' in str(context.exception))
+        self.assertTrue('Selection for dimension Indicator contains invalid elements' in str(context.exception))
 
     def test_get_data_from_flat_dataset(self):
         """The method is testing load data from flat dataset"""
@@ -271,10 +271,10 @@ class TestKnoemaClient(unittest.TestCase):
 
         data_frame = knoema.get('bjxchy', country='Albania', measure='Original Principal Amount ($)', datecolumn='Effective Date (Most Recent)', timerange='2010-2015', frequency='A')
         self.assertEqual(data_frame.shape[0], 5)
-        self.assertEqual(data_frame.shape[1], 5)
+        self.assertEqual(data_frame.shape[1], 4)
 
-        sname = ('Albania', 'Ministry of Finance', 'Albania', 'FSL', 'Disbursing&Repaying', 'Original Principal Amount ($)', 'A')
-        value = data_frame.at['2013-01-01', sname]
+        sname = ('Albania', 'MINISTRY OF FINANCE', 'Albania', 'FSL', 'Repaying', 'Sum(Original Principal Amount ($))', 'A')
+        value = data_frame.at[pandas.to_datetime('2013-01-01'), sname]
         self.assertEqual(value, 40000000.0)
 
     def test_incorrect_dataset_id(self):
@@ -288,18 +288,20 @@ class TestKnoemaClient(unittest.TestCase):
     def test_getdata_multiseries_by_member_key(self):
         """The method is testing getting multiple series by dimension member keys"""
 
-        data_frame = knoema.get('IMFWEO2017Apr', country='1000010;1000000;1001830', subject='1000370;1000040')
-        self.assertEqual(data_frame.shape[0], 43)
-        self.assertEqual(data_frame.shape[1], 6)
+        data_frame = knoema.get('xmhdwqf', company='1000000;1000010', indicator='1000020;1000050')
+        self.assertEqual(data_frame.shape[0], 56)
+        self.assertEqual(data_frame.shape[1], 4)
 
-        indx = data_frame.first_valid_index()
-        sname = ('United States', 'Gross domestic product, current prices (National currency)', 'A')
-        value = data_frame.at[indx, sname]
-        self.assertEqual(value, 2862.475)
+        self.assertEqual(['Company', 'Indicator', 'Frequency'], data_frame.columns.names)
 
-        indx = data_frame.last_valid_index()
+        indx = data_frame.index[7]
+        sname = ('BOX', 'Monthly', 'M')
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 23760.331)
+        self.assertEqual(value, 23.08)
+
+        indx = data_frame.index[55]
+        value = data_frame.at[indx, sname]
+        self.assertEqual(value, 19.71)
 
     def test_get_data_from_dataset_by_dim_ids(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names by dim ids"""
@@ -352,20 +354,6 @@ class TestKnoemaClient(unittest.TestCase):
         indx = data_frame.last_valid_index()
         value = data_frame.at[indx, sname]
         self.assertAlmostEqual(value, 22267.638, 3)
-
-    def test_delete_dataset_negative(self):
-        """The method is negative test on dataset deletion"""
-         
-        with self.assertRaises(urllib.error.HTTPError) as context:
-            knoema.delete('non_existing_id')
-        self.assertTrue('HTTP Error 400: Bad Request' in str(context.exception))
-
-    def test_verify_dataset_negative(self):
-        """The method is negative test on dataset verification"""
-
-        with self.assertRaises(ValueError) as context:
-            knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.com/')
-        self.assertTrue("Dataset has not been verified, because of the following error(s): Requested dataset doesn't exist or you don't have access to it." in str(context.exception))
 
     def test_include_metadata_true(self):
         """The method is testing getting multiple series with data and metadata"""
@@ -444,31 +432,29 @@ class TestKnoemaClient(unittest.TestCase):
     def test_get_data_from_dataset_with_multiword_dimnames_and_metadata_and_mnemomics(self):
         """The method is testing load data from regular dataset with dimenions that have multi word names include metadata and mnemonics"""
 
-        data_frame, metadata = knoema.get('xwfebbf', True,**{'Country': '1000000',
-                                                    'Indicator': '1000000',
-                                                    'Adjustment Type': '1000000',
-                                                    'Conversion Type': '1000000'})
+        data_frame, metadata = knoema.get('eqohmpb', True, **{'Country': '1000000',
+                                                    'Indicator': '1000010'})
 
-        self.assertEqual(data_frame.shape[0], 1)
-        self.assertEqual(data_frame.shape[1], 1)
-        self.assertEqual(metadata.shape[0], 7)
-        self.assertEqual(metadata.shape[1], 1)
-        self.assertEqual(['Country', 'Indicator', 'Adjustment Type','Conversion Type', 'Frequency'], data_frame.columns.names)
-        self.assertEqual(['Country', 'Indicator', 'Adjustment Type','Conversion Type', 'Frequency'], metadata.columns.names)
+        self.assertEqual(data_frame.shape[0], 22)
+        self.assertEqual(data_frame.shape[1], 6)
+        self.assertEqual(metadata.shape[0], 5)
+        self.assertEqual(metadata.shape[1], 6)
+        self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
+        self.assertEqual(['Country', 'Indicator', 'Frequency'], metadata.columns.names)
 
-        sname = ('China','GDP DEFLATOR (% CHANGE, AV)','Not seasonally adjusted', 'Average','A')
+        sname = ('Afghanistan', 'Gross domestic product, current prices', 'A')
 
         indx = data_frame.first_valid_index()
         value = data_frame.at[indx, sname]
-        self.assertAlmostEqual(value, 2.0)
+        self.assertAlmostEqual(value, 0.0)
 
         indx = metadata.first_valid_index()
         value = metadata.at[indx, sname]
-        self.assertAlmostEqual(value, 'CN')
+        self.assertAlmostEqual(value, '512')
 
-        self.assertAlmostEqual(metadata.at['Unit', sname], 'Unit')
+        self.assertAlmostEqual(metadata.at['Unit', sname], 'Number')
         self.assertAlmostEqual(metadata.at['Scale', sname], 1.0)
-        self.assertAlmostEqual(metadata.at['Mnemonics', sname], 'RRRRRRRRR')
+        self.assertAlmostEqual(metadata.at['Mnemonics', sname], '512NGDP_A_in_test_dataset')
        
     def test_get_data_from_flat_dataset_with_multi_measures_and_metadata(self):
         """The method is testing load data from flat dataset with with mulitple measures and metadata"""
@@ -504,12 +490,12 @@ class TestKnoemaClient(unittest.TestCase):
     def test_weekly_frequency(self):
         """The method is testing load data from regular dataset by weekly frequency"""
    
-        data = knoema.get('WOERDP2015', location='China', Indicator='EMBI Sovereign Spreads (Basis points)', frequency='W')
-        sname = ('China', 'EMBI Sovereign Spreads (Basis points)', 'W')
-        value = data.at[datetime.datetime(2010, 1, 4), sname]
-        self.assertEqual(value, 44)
-        value = data.at[datetime.datetime(2015, 9, 7), sname]
-        self.assertEqual(value, 183)
+        data = knoema.get('xmhdwqf', company='BOX', indicator='Weekly', frequency='W')
+        sname = ('BOX', 'Weekly', 'W')
+        value = data.at[pandas.to_datetime('2018-12-31'), sname]
+        self.assertEqual(value, 32.37)
+        value = data.at[pandas.to_datetime('2019-12-30'), sname]
+        self.assertEqual(value, 83.73)
 
     def test_incorrect_host_knoema_get(self):
         """The method is negative test on get series from dataset with incorrect host"""
@@ -519,25 +505,6 @@ class TestKnoemaClient(unittest.TestCase):
             apicfg.host = 'knoema_incorect.com'
             _ = knoema.get('IMFWEO2017Apr', country='914', subject='ngdp')
         self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))
-
-    def test_incorrect_host_delete_dataset(self):
-        """The method is negative test on delete dataset with incorrect host"""
-
-        with self.assertRaises(ValueError) as context:
-            apicfg = knoema.ApiConfig()
-            apicfg.host = 'knoema_incorect.com'
-            knoema.delete('dataset')
-        self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))
-
-    def test_incorrect_host_verify_dataset(self):
-        """The method is negative test on verify dataset with incorrect host"""
-
-        with self.assertRaises(ValueError) as context:
-            apicfg = knoema.ApiConfig()
-            apicfg.host = 'knoema_incorect.com'
-            knoema.verify('non_existing_id', datetime.date.today(), 'IMF', 'http://knoema.com')
-        self.assertTrue("The specified host knoema_incorect.com does not exist" in str(context.exception))    
-
 
     def test_get_data_with_partial_selection(self):
         """The method is testing getting series with partial selection"""
@@ -640,14 +607,14 @@ class TestKnoemaClient(unittest.TestCase):
     
     def test_get_all_series_from_dataset(self):
         """The method is testing getting all series from dataset"""
-        data_frame= knoema.get('eqohmpb')
-        self.assertEqual(data_frame.shape[1], 14)
-        self.assertEqual(['Country', 'Indicator', 'Frequency'], data_frame.columns.names)
+        data_frame= knoema.get('dzlnsee')
+        self.assertEqual(data_frame.shape[1], 4)
+        self.assertEqual(['Company', 'Indicator', 'Frequency'], data_frame.columns.names)
 
         indx = data_frame.first_valid_index()
-        sname = ('Afghanistan', 'Gross domestic product, current prices', 'M')
+        sname = ('BOX', 'Monthly', 'M')
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 26.02858277)
+        self.assertEqual(value, 23.08)
 
     def test_with_empty_attributes_in_the_dimensions(self):
         data, metadata = knoema.get('IMFWEO2017Oct', include_metadata=True, country=['914','512'], subject='lp')
@@ -709,7 +676,7 @@ class TestKnoemaClient(unittest.TestCase):
         apicfgCommunity.app_secret='g4lKmIOPE2R4w'
 
         data_frame = knoema.get('qfsneof', country='USA', series='NY.GDP.MKTP.KD.ZG')
-        self.assertEqual(data_frame.shape[0], 59)
+        self.assertEqual(data_frame.shape[0], 60)
         self.assertEqual(data_frame.shape[1], 1)
 
         self.assertEqual(['Country', 'Series', 'Frequency'], data_frame.columns.names)
@@ -721,7 +688,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         indx = data_frame.index[57]
         value = data_frame.at[indx, sname]
-        self.assertEqual(value, 2.92732272821085)
+        self.assertEqual(value, 2.99646435222829)
 
 
     def test_getdata_custom_separator(self):
@@ -791,26 +758,26 @@ class TestKnoemaClient(unittest.TestCase):
         self.assertEqual(value, 8.692)
 
     def test_getdata_with_columns(self):
-        """The method is testing getting data from dataset with region dimention by region id"""
+        """The method is testing getting data from dataset with columns"""
 
-        data_frame = knoema.get('ERM', Company = '147', columns='*')
+        data_frame = knoema.get('pqgusj', Company = 'APPLE', columns='*', frequency='FQ')
 
-        self.assertEqual(['Company', 'Kpi Type', 'Kpi', 'Frequency', 'Attribute'], data_frame.columns.names)
-        self.assertEqual(4, data_frame.columns.size)
-        self.assertEqual(('Shopify, Inc. Class A', 'Reported Metric', 'GPV', 'FQ', 'StatisticalDate'), data_frame.columns.values[1])
+        self.assertEqual(['Company', 'Indicator', 'Country', 'Frequency', 'Attribute'], data_frame.columns.names)
+        self.assertEqual(3, data_frame.columns.size)
+        self.assertEqual(('APPLE', 'Export', 'US', 'FQ', 'StatisticalDate'), data_frame.columns.values[1])
 
     def test_getdata_datelabels(self):
         """The method is testing getting data from dataset with region dimention by region id"""
 
-        data_frame = knoema.get('1010DDCDYOY072020', Company = '147')
+        data_frame = knoema.get('pqgusj', company = 'APPLE', frequency='FQ')
 
-        self.assertEqual(['Category', 'Company', 'Country', 'Indicator', 'Frequency'], data_frame.columns.names)
-        sname = ('Shopify', 'SHOPIFY', 'US', 'Debit Avg Customer Spend YoY', 'FQ')
+        self.assertEqual(['Company', 'Indicator', 'Country', 'Frequency'], data_frame.columns.names)
+        sname = ('APPLE', 'Export', 'US', 'FQ')
 
         # this is FQ dateLabel
-        value = data_frame.at[datetime.datetime(2013, 3, 31), sname]
+        value = data_frame.at[pandas.to_datetime('2019-10-09'), sname]
 
-        self.assertEqual(value, -0.1537901182)
+        self.assertEqual(value, 0.531275885712192)
 
     def test_search_wrapper_search_for_timeseries(self):
         """The method is testing search wrapper to search for timeseries"""
@@ -895,66 +862,69 @@ class TestKnoemaClient(unittest.TestCase):
 
         self.assertEqual(ticker.name, '3D Systems Corporation')
         self.assertEqual(len(ticker.groups), 4)
-        self.assertEqual(ticker.groups[0].name, 'HOLT Scorecards')
-        self.assertEqual(len(ticker.groups[0].indicators), 23)
-        self.assertEqual(ticker.groups[0].indicators[0].name, '% Change in CFROI')
+        self.assertEqual(ticker.groups[0].name, 'Credit Risk')
+        self.assertEqual(len(ticker.groups[0].indicators), 6)
+        self.assertEqual(ticker.groups[0].indicators[0].name, 'Bankruptcy Base FRISK Probability')
         self.assertIs(type(ticker.groups[0].indicators[0].get()), pandas.core.frame.DataFrame)
 
-        indicator = ticker.get_indicator('% Upside / Downside')
-        self.assertEqual(indicator.name, '% Upside / Downside')
+        indicator = ticker.get_indicator('Bankruptcy Base FRISK Probability')
+        self.assertEqual(indicator.name, 'Bankruptcy Base FRISK Probability')
         self.assertIs(type(indicator.get()), pandas.core.frame.DataFrame)
 
     def test_FQ_frequescy(self):
         """Testing FQ frequency"""
 
-        data_frame = knoema.get('1010DDCDYOY', company='GRUBHUB', category='Eat24', indicator='Debit Avg Customer Spend YoY', frequency='FQ')
+        data_frame = knoema.get('xmhdwqf', company='UBER', indicator='Fisqal Quarterly', frequency='FQ')
         self.assertIs(type(data_frame), pandas.core.frame.DataFrame)
-        self.assertEqual(data_frame.shape[0], 30)
+        self.assertEqual(data_frame.shape[0], 26)
         self.assertEqual(data_frame.shape[1], 1)
 
     def test_aggregations(self):
         """Testing aggregations disaggregation"""
 
-        frame = knoema.get('SDRDPCRBYP', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
-        self.assertEqual(frame.shape[0], 851)
+        frame = knoema.get('xmhdwqf', company='UBER', indicator='Daily', frequency='D', timerange = '2019M1-2021M4')
+        self.assertEqual(frame.shape[0], 366)
         self.assertEqual(frame.shape[1], 1)
 
-        generator = knoema.get('SDRDPCRBYP', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'D', timerange = '2018M1-2020M4')
+        generator = knoema.get('xmhdwqf', group_by = 'company', company='UBER', indicator='Daily', frequency='D', timerange = '2019M1-2021M4')
         for frame in generator:
-            self.assertEqual(frame.data.shape[0], 851)
+            self.assertEqual(frame.data.shape[0], 366)
             self.assertEqual(frame.data.shape[1], 1)
             
 
-        frame = knoema.get('SDRDPCRBYP', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
-        self.assertEqual(frame.shape[0], 10)
+        frame = knoema.get('xmhdwqf', company='UBER', indicator='Daily', frequency='Q', timerange = '2019M1-2021M4', transform='sum')
+        self.assertEqual(frame.shape[0], 5)
         self.assertEqual(frame.shape[1], 1)
 
-        generator = knoema.get('SDRDPCRBYP', group_by = 'company', company = 'ACTIVISION', indicator = 'Digital Premium Console Revenue', publisher = 'Activision Blizzard, Inc.', frequency = 'Q', timerange = '2018M1-2020M4')
+        generator = knoema.get('xmhdwqf', group_by='company', company='UBER', indicator='Daily', frequency='Q', timerange = '2019M1-2021M4', transform='sum')
         for frame in generator:
-            self.assertEqual(frame.data.shape[0], 10)
+            self.assertEqual(frame.data.shape[0], 5)
             self.assertEqual(frame.data.shape[1], 1)
+
+    def test_auto_aggregations_nodata(self):
+        """Testing that auto aggregations returns no data"""
+
+        frame = knoema.get('xmhdwqf', company='UBER', indicator='Daily', frequency='D',
+                           timerange='2019M1-2021M4')
+        self.assertEqual(frame.shape[0], 366)
+        self.assertEqual(frame.shape[1], 1)
+
+        frame = knoema.get('xmhdwqf', company='UBER', indicator='Daily', frequency='Q',
+                           timerange='2019M1-2021M4')
+        self.assertEqual(frame.shape[0], 0)
+        self.assertEqual(frame.shape[1], 0)
+
+    def test_auto_disaggregations_nodata(self):
+        """Testing that auto disaggregations returns no data"""
+
+        frame = knoema.get('xmhdwqf', company='UBER', indicator='Annual', frequency='A', timerange='2018-2020')
+        self.assertEqual(frame.shape[0], 3)
+        self.assertEqual(frame.shape[1], 1)
+
+        frame = knoema.get('xmhdwqf', company='UBER', indicator='Annual', frequency='M', timerange='2018-2020')
+        self.assertEqual(frame.shape[0], 0)
+        self.assertEqual(frame.shape[1], 0)
 
     def test_noaggregation(self):
         data = knoema.get(**{"dataset" : "IMFWEO2020Oct", "country": "United States", "subject": "Population (Persons)", "frequency" : "Q" , "transform": 'NOAGG'})
         self.assertEqual(data.shape[1], 0)
-
-    def test_upload_generated_frames(self):
-        tuples = list(zip(*[['bar', 'bar', 'baz', 'baz', 'foo', 'foo', 'qux', 'qux'], ['one', 'two', 'one', 'two', 'one', 'two', 'one', 'two']]))
-        index = pandas.MultiIndex.from_tuples(tuples, names=['first', 'second'])
-        dates = pandas.date_range('1/1/2000', periods=8)
-        frame = pandas.DataFrame(numpy.random.randn(8, 8), index=dates, columns=index)
-        res = knoema.upload(frame, name = 'Test dataset')
-        self.assertIs(type(res), str)
-        self.assertEqual(len(res), 7)
-
-        frame = pandas.DataFrame(numpy.random.randn(8, 4), index=dates, columns=['A', 'B', 'C', 'D'])
-        res = knoema.upload(frame, name = 'Test dataset')
-        self.assertIs(type(res), str)
-        self.assertEqual(len(res), 7)
-
-    def test_upload_frames_from_existing_datasets(self):
-        frame = knoema.get('IMFWEO2017Oct', country='Albania;United States;Italy', subject='ngdp', timerange = '2015-2020')
-        res = knoema.upload(frame, name = 'Test dataset')
-
-        self.assertIs(type(res), str)
-        self.assertEqual(len(res), 7)

@@ -370,11 +370,12 @@ class StreamingResponseReader(ResponseReader):
 
         frequency_list = []
         use_stat_format_for_date_label = self._get_use_stat_format_for_date_label(resp.series)
+        dimensions_members_with_id = self._get_dimensions_members_with_id(resp.series)
 
         detail_values = None
         for series_point in resp.series:  
             all_values = series_point['values']  
-            series_name = self._get_series_name(series_point)
+            series_name = self._get_series_name(series_point, dimensions_members_with_id)
             if detail_columns is not None:
                 detail_values = []
                 for column_name in detail_columns:
@@ -453,10 +454,40 @@ class StreamingResponseReader(ResponseReader):
                 curr_date_val += delta
         return use_stat_format_for_date_label
 
-    def _get_series_name(self, series_point):
+    def _get_dimensions_members_with_id(self, series):
+        dimensions_members_with_id = {}
+
+        for dim in self.dataset.dimensions:
+            names = []
+            names_with_id = []
+            ids = []
+            for series_point in series:
+                name = series_point[dim.id]['name'] if 'name' in series_point[dim.id] else series_point[dim.id]
+                id = series_point[dim.id]['id'] if 'id' in series_point[dim.id] else series_point[dim.id]
+
+                if (name in names):
+                    if (id not in ids and name not in names_with_id):
+                        names_with_id.append(name)
+                else:
+                    names.append(name)
+
+                ids.append(id)
+
+            if (len(names_with_id) > 0):
+                dimensions_members_with_id[dim.id] = names_with_id
+
+
+        return dimensions_members_with_id
+
+    def _get_series_name(self, series_point, dimensions_members_with_id):
         names = []
         for dim in self.dataset.dimensions:
-            names.append(series_point[dim.id]['name'] if 'name' in series_point[dim.id] else series_point[dim.id])
+            name = series_point[dim.id]['name'] if 'name' in series_point[dim.id] else series_point[dim.id]
+            members_with_id = dimensions_members_with_id[dim.id] if dim.id in dimensions_members_with_id else []
+            if (name in members_with_id):
+                id = series_point[dim.id]['id'] if 'id' in series_point[dim.id] else series_point[dim.id]
+                name = name + '(' + id + ')'
+            names.append(name)
         if 'frequency' in series_point:
             names.append(series_point['frequency'])
         return tuple(names)

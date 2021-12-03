@@ -458,20 +458,19 @@ class StreamingResponseReader(ResponseReader):
         dimensions_members_with_id = {}
 
         for dim in self.dataset.dimensions:
-            names = []
-            names_with_id = []
-            ids = []
+            names = set()
+            names_with_id = set()
+            ids = set()
             for series_point in series:
                 name = series_point[dim.id]['name'] if 'name' in series_point[dim.id] else series_point[dim.id]
                 id = series_point[dim.id]['id'] if 'id' in series_point[dim.id] else series_point[dim.id]
 
-                if (name in names):
-                    if (id not in ids and name not in names_with_id):
-                        names_with_id.append(name)
+                if (name in names and id not in ids):
+                    names_with_id.add(name)
                 else:
-                    names.append(name)
+                    names.add(name)
 
-                ids.append(id)
+                ids.add(id)
 
             if (len(names_with_id) > 0):
                 dimensions_members_with_id[dim.id] = names_with_id

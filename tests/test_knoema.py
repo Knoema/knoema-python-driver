@@ -201,7 +201,7 @@ class TestKnoemaClient(unittest.TestCase):
 
         data_frame = knoema.get('bjxchy', country='Albania', measure='Original Principal Amount ($)', datecolumn='Effective Date (Most Recent)', timerange='2010-2015', frequency='A')
         self.assertEqual(data_frame.shape[0], 5)
-        self.assertEqual(data_frame.shape[1], 4)
+        self.assertEqual(data_frame.shape[1], 5)
 
         sname = ('Albania', 'MINISTRY OF FINANCE', 'Albania', 'FSL', 'Repaying', 'Sum(Original Principal Amount ($))', 'A')
         value = data_frame.at[pandas.to_datetime('2013-01-01'), sname]

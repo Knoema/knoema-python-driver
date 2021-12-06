@@ -506,8 +506,9 @@ class StreamingResponseReader(ResponseReader):
 
     def _get_metadata_series(self, resp, names_of_attributes):
         series = {}
+        dimensions_members_with_id = self._get_dimensions_members_with_id(resp.series)
         for series_point in resp.series:
-            serie_name = self._get_series_name(series_point)
+            serie_name = self._get_series_name(series_point, dimensions_members_with_id)
             if serie_name not in series:
                 serie_attrs = self._get_series_with_metadata(series_point, resp.dimensionFields)
                 series[serie_name] = KnoemaSeries(serie_name, serie_attrs, names_of_attributes, None)

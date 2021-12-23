@@ -168,7 +168,7 @@ def upload(file_path_or_frame, dataset=None, public=False, name = None):
     client = ApiClient(config.host, config.app_id, config.app_secret)
 
     if isinstance(file_path_or_frame, str):
-        return client.upload(file_path_or_frame, dataset, public)
+        return client.upload(file_path_or_frame, dataset, public, name)
 
     frame_transformer = FrameTransformerFactory(file_path_or_frame).get_transformer()
 

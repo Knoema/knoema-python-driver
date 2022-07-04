@@ -463,7 +463,7 @@ class StreamingResponseReader(ResponseReader):
             ids = set()
             for series_point in series:
                 name = series_point[dim.id]['name'] if 'name' in series_point[dim.id] else series_point[dim.id]
-                id = series_point[dim.id]['id'] if 'id' in series_point[dim.id] else series_point[dim.id]
+                id = series_point[dim.id]['id'] if 'id' in series_point[dim.id] else str(series_point[dim.id])
 
                 if (name in names and id not in ids):
                     names_with_id.add(name)

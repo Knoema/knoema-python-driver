@@ -108,16 +108,7 @@ class ApiClient:
         return responseobj(_response_to_json(resp))
 
     def check_correct_host(self):
-        """The method checks whether the host is correctly set and whether it can configure the connection to this host. Does not check the base host knoema.com """
-        if self._host == 'knoema.com':
-            return
-        url = self._get_url('/api/1.0/frontend/tags')
-        headers = self._get_request_headers()
-        req = urllib.request.Request(url, headers=headers)
-        try:
-            _ = urllib.request.urlopen(req)
-        except:
-            raise ValueError('The specified host {} does not exist'.format(self._host))  
+        pass 
 
     def get_dataset(self, datasetid):
         """The method is getting information about dataset byt it's id"""

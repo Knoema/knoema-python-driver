@@ -52,6 +52,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
 
     config = ApiConfig()
     client = ApiClient(config.host, config.app_id, config.app_secret)
+    client.check_correct_host()
 
     ds = client.get_dataset(dataset) if dataset else None
 

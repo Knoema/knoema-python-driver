@@ -113,9 +113,6 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         if len(value) > 0 and value[0].startswith('@'):
             has_agg = True
 
-    if not dataset:
-        raise ValueError('Dataset id is not specified')
-    
     if time_params_count > 1:
         raise ValueError('Only one parameter should be passed: timerange, timesince, timelast, timemebers')
     
@@ -132,6 +129,9 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
             reader.separator = separator
             
         return reader.get_pandasframe()
+    
+    if not dataset:
+        raise ValueError('Dataset id is not specified')
 
     if ds.type == 'Regular' and not has_agg and group_by:
         if frequency != None: dim_values['frequency'] = frequency

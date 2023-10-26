@@ -112,9 +112,9 @@ class Dimension(DimensionModel):
             self.name_map[item.name.upper()] = item
             if 'id' in item.fields:
                 self.id_map[item.fields['id'].upper()] = item
-            if 'regionid' in item.fields:
+            if 'regionid' in item.fields and item.fields['regionid'] is not None:
                 self.region_map[item.fields['regionid'].upper()] = item
-            if 'ticker' in item.fields:
+            if 'ticker' in item.fields and item.fields['ticker'] is not None:
                 self.ticker_map[item.fields['ticker'].upper()] = item
 
         

@@ -60,24 +60,65 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         columns = columns.split(';')
 
     frequency = None
-    timerange = None
+    time = None
+    time_params_count = 0
     has_agg = False
+    advanced = False
     for name, value in dim_values.copy().items():
         if is_equal_strings_ignore_case(name, 'frequency'):
             frequency = value
             del dim_values[name]
             continue
+
         if is_equal_strings_ignore_case(name, 'transform'):
             transform = value
             del dim_values[name]
             continue
+
         if is_equal_strings_ignore_case(name, 'timerange'):
-            timerange = value
+            time = value
+            del dim_values[name]
+            if time != None: 
+                dim_values['timerange'] = time
+                ++time_params_count
+            continue
+
+        if is_equal_strings_ignore_case(name, 'timesince'):
+            time = value
+            del dim_values[name]
+            if time != None: 
+                dim_values['timesince'] = time
+                advanced = True
+                ++time_params_count
+            continue
+
+        if is_equal_strings_ignore_case(name, 'timelast'):
+            time = value
+            del dim_values[name]
+            if time != None: 
+                dim_values['timelast'] = time
+                advanced = True
+                ++time_params_count
+            continue
+        
+        if is_equal_strings_ignore_case(name, 'timemembers'):
+            time = value
+            del dim_values[name]
+            if time != None: 
+                dim_values['timemembers'] = time
+                advanced = True
+                ++time_params_count
             continue
 
         if len(value) > 0 and value[0].startswith('@'):
             has_agg = True
 
+    if time_params_count > 1:
+        raise ValueError('Only one parameter should be passed: timerange, timesince, timelast, timemebers')
+    
+    if advanced and (group_by or columns):
+        raise ValueError('Advanced time modes and multiple frequencies can\'t be used with group_by or columns parameters')
+    
     if mnemonics:
         reader =  MnemonicsDataReader(client, mnemonics, transform, frequency)
         reader.columns = columns
@@ -88,7 +129,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
             reader.separator = separator
             
         return reader.get_pandasframe()
- 
+    
     if not dataset:
         raise ValueError('Dataset id is not specified')
 
@@ -107,7 +148,7 @@ def get(dataset = None, include_metadata = False, mnemonics = None, transform = 
         reader.include_metadata = include_metadata
         reader.dataset = ds
 
-        return reader.get_pandasframe_by_metadata_grouped(metadata, frequency, timerange)
+        return reader.get_pandasframe_by_metadata_grouped(metadata, frequency, time)
 
     if ds.type == 'Regular' and frequency != None:
         dim_values['frequency'] = frequency

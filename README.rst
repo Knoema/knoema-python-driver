@@ -100,6 +100,19 @@ Also you can group results by one of dimensions::
         data = frame.data
         metadata = frame.metadata
 
+There is an advanced time mode where you can use multiple frequencies and different time selections::
+
+    import knoema
+    data_frame = knoema.get('IMFWEO2017Oct', country='914;512;111', subject='lp;ngdp', frequency='A', timelast='5')
+
+    data_frame = knoema.get('IMFDOT2017', **{'Country': 'Algeria', 'Indicator': 'TXG_FOB_USD', 'Counterpart Country': '622', 'frequency': 'A;Q', 'timesince': '2010'})
+
+    data_frame = knoema.get('IMFWEO2021Apr', Country='614', Subject='BCA', timemembers='1980;2002;2023')
+
+The advanced time mode doesn't work with grouped results and columns.
+
+
+
 ******************************************************
 Retrieving series from datasets including metadata
 ******************************************************
@@ -356,3 +369,14 @@ Examples::
 
     knoema.get('IMFWEO2017Oct', **{'country':'914', 'subject':'nonexistent_element1; nonexistent_element2'})
 
+14. "ValueError: Only one parameter should be passed: timerange, timesince, timelast, timemebers"
+This error appears when you use several time modes at a time.
+Example::
+
+    knoema.get('IMFWEO2017Oct', country='914', subject='ngdp', timesince='2000', timerange='2000-2010')
+
+15. "ValueError: Advanced time modes and multiple frequencies can't be used with group_by or columns parameters"
+This error appears when you use advanced time mode and/or mupltiple frequencies with group_by or columns parameters passed.
+Example::
+
+    knoema.get('IMFWEO2017Oct', country='914;900', subject='ngdp', timesince='2000', group_by='country')

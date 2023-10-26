@@ -603,7 +603,7 @@ class TransformationDataReader(SelectionDataReader):
         if frequency:
             dim_values['frequency'] = frequency
         super().__init__(client, dim_values)
-
+        
     def get_pandasframe(self):
         data_resp = self.client.get_dataset_data(self.dataset.id, self._get_data_filters())
         if isinstance(data_resp, definition.DetailsResponse):
@@ -625,7 +625,7 @@ class TransformationDataReader(SelectionDataReader):
 
     def _get_data_filters(self):
         filter_dims = {}
-        passed_params = ['timerange', 'transform']
+        passed_params = ['timerange', 'transform', 'timesince', 'timelast', 'timemembers']
 
         for name, value in self.dim_values.items():
             if name.lower() in passed_params:

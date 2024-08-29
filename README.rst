@@ -2,7 +2,7 @@
 Official Python package for Knoema's API
 ========================================
 
-This is the official documentation for Knoema's Python Package. The package can be used for obtaining data from the datasets from the site knoema.com and uploading data to datasets. This package is compatible with Python v3.x+.
+This is the official documentation for Knoema's Python Package. The package can be used for obtaining data from the datasets from the site knoema.com and uploading data to datasets. This package is compatible with Python v3.9+.
 
 ************
 Installation

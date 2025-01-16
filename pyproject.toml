@@ -19,7 +19,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-  "pandas=^2.0.0",
+  "pandas>=2.0.0",
   "pytest-shutil==1.7.0"
 ]
 keywords = ["API", "knoema"]
